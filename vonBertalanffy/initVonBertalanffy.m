@@ -15,9 +15,6 @@ load([vonBdir filesep 'setupThermoModel' filesep 'experimentalData' filesep 'alb
 
 load([vonBdir filesep 'setupThermoModel' filesep  'experimentalData' filesep 'alberty2006' filesep 'metAbbrAlbertyAbbr.mat']);
 
-%group contrbuion data for E. coli
-load([vonBdir filesep 'setupThermoModel' filesep 'experimentalData' filesep 'groupContribution' filesep 'metGroupCont_Ecoli_iAF1260.mat']);
-
 if isempty(which('pHbalanceProtons'))
     fprintf('Add the toolbox to the matlab path.\n')
     %add the toolbox path to the matlab path
@@ -26,7 +23,9 @@ if isempty(which('pHbalanceProtons'))
 end
 
 if ~exist([vonBdir filesep 'doc'])
-    fprintf('Generating html documentation... \n')
-    generateVonBertalanffyDocumentation;
-    fprintf('...documentation complete.\n')
+    if ~(exist('m2html','file') ~= 2)
+        fprintf('Generating html documentation... \n')
+        generateVonBertalanffyDocumentation;
+        fprintf('...documentation complete.\n')
+    end
 end
