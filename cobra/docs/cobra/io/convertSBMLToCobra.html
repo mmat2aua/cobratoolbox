@@ -1,0 +1,499 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of convertSBMLToCobra</title>
+  <meta name="keywords" content="convertSBMLToCobra">
+  <meta name="description" content="convertSBMLToCobra Convert SBML format model (created using SBML Toolbox)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<!-- ../menu.html cobra --><!-- menu.html io -->
+<h1>convertSBMLToCobra
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>convertSBMLToCobra Convert SBML format model (created using SBML Toolbox)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function model = convertSBMLToCobra(modelSBML,defaultBound,compSymbolList,compNameList) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">convertSBMLToCobra Convert SBML format model (created using SBML Toolbox)
+to Cobra format
+
+ model = convertSBMLToCobra(modelSBML,defaultBound)
+
+INPUTS
+ modelSBML         SBML model structure
+
+OPTIONAL INPUTS
+ defaultBound      Maximum bound for model (Default = 1000)
+ compSymbolList    List of compartment symbols
+ compNameList      List of compartment names corresponding to compSymbolList
+
+OUTPUT
+ model             COBRA model structure
+ Markus Herrgard 1/25/08
+
+ Ines Thiele 01/27/2010 - I added new field to be read-in from SBML file
+ if provided in file (e.g., references, comments, metabolite IDs, etc.)
+
+ Richard Que 02/08/10 - Properly format reaction and metabolite fields
+                        from SBML.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>	columnVector Converts a vector to a column vector</li><li><a href="../../cobra/tools/parseBoolean.html" class="code" title="function [elements,newRule] = parseBoolean(str,tokens,allowedElementChars)">parseBoolean</a>	parseBoolean Parses a Boolean logic statement</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="readCbModel.html" class="code" title="function model = readCbModel(fileName,defaultBound,fileType,modelDescription,compSymbolList,compNameList)">readCbModel</a>	readCbModel Read in a constraint-based model</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [genes,rule,subSystem,grRule,formula,confidenceScore,citation,comment,ecNumber,charge] = parseSBMLNotesField(notesField)</a></li><li><a href="#_sub2" class="code">function [metCHEBI,metKEGG,metPubChem,metInChI] = parseSBMLAnnotationField(annotationField)</a></li><li><a href="#_sub3" class="code">function str = cleanUpFormatting(str)</a></li></ul>
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function model = convertSBMLToCobra(modelSBML,defaultBound,compSymbolList,compNameList)</a>
+0002 <span class="comment">%convertSBMLToCobra Convert SBML format model (created using SBML Toolbox)</span>
+0003 <span class="comment">%to Cobra format</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% model = convertSBMLToCobra(modelSBML,defaultBound)</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">%INPUTS</span>
+0008 <span class="comment">% modelSBML         SBML model structure</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">%OPTIONAL INPUTS</span>
+0011 <span class="comment">% defaultBound      Maximum bound for model (Default = 1000)</span>
+0012 <span class="comment">% compSymbolList    List of compartment symbols</span>
+0013 <span class="comment">% compNameList      List of compartment names corresponding to compSymbolList</span>
+0014 <span class="comment">%</span>
+0015 <span class="comment">%OUTPUT</span>
+0016 <span class="comment">% model             COBRA model structure</span>
+0017 <span class="comment">% Markus Herrgard 1/25/08</span>
+0018 <span class="comment">%</span>
+0019 <span class="comment">% Ines Thiele 01/27/2010 - I added new field to be read-in from SBML file</span>
+0020 <span class="comment">% if provided in file (e.g., references, comments, metabolite IDs, etc.)</span>
+0021 <span class="comment">%</span>
+0022 <span class="comment">% Richard Que 02/08/10 - Properly format reaction and metabolite fields</span>
+0023 <span class="comment">%                        from SBML.</span>
+0024 <span class="comment">%</span>
+0025 
+0026 <span class="keyword">if</span> (nargin &lt; 2)
+0027     defaultBound = 1000;
+0028 <span class="keyword">end</span>
+0029 
+0030 <span class="keyword">if</span> nargin &lt; 3
+0031     compSymbolList = {};
+0032     compNameList = {};
+0033 <span class="keyword">end</span>
+0034 
+0035 nMetsTmp = length(modelSBML.species);
+0036 nRxns = length(modelSBML.reaction);
+0037 
+0038 <span class="comment">%% Construct initial metabolite list</span>
+0039 formulaCount = 0;
+0040 speciesList = {};
+0041 chargeList = [];
+0042 metFormulas = {};
+0043 haveFormulasFlag = false;
+0044 tmpSpecies = [];
+0045 <span class="keyword">for</span> i = 1:nMetsTmp
+0046     <span class="comment">% Ignore exchange species</span>
+0047     <span class="keyword">if</span> (isempty(regexp(modelSBML.species(i).id,<span class="string">'_b$'</span>,<span class="string">'ONCE'</span>)));
+0048         tmpSpecies = [ tmpSpecies  modelSBML.species(i)];
+0049         speciesList{end+1} = modelSBML.species(i).id;
+0050         <span class="keyword">if</span> isfield(modelSBML.species(i),<span class="string">'charge'</span>)
+0051             tmpCharge = double(modelSBML.species(i).charge);
+0052         <span class="keyword">else</span>
+0053             tmpCharge = 0;
+0054         <span class="keyword">end</span>
+0055         notesField = modelSBML.species(i).notes;
+0056         <span class="comment">% Get formula if in notes field</span>
+0057         <span class="keyword">if</span> (~isempty(notesField))
+0058             [tmp,tmp,tmp,tmp,formula,tmp,tmp,tmp,tmp,charge] = <a href="#_sub1" class="code" title="subfunction [genes,rule,subSystem,grRule,formula,confidenceScore,citation,comment,ecNumber,charge] = parseSBMLNotesField(notesField)">parseSBMLNotesField</a>(notesField);
+0059             tmpCharge = charge;
+0060             metFormulas {end+1} = formula;
+0061             formulaCount = formulaCount + 1;
+0062             haveFormulasFlag = true;
+0063         <span class="keyword">end</span>
+0064         chargeList= [chargeList tmpCharge];
+0065     <span class="keyword">end</span>
+0066 <span class="keyword">end</span>
+0067 
+0068 nMets = length(speciesList);
+0069 
+0070 <span class="comment">%% Construct stoichiometric matrix and reaction list</span>
+0071 S = sparse(nMets,nRxns);
+0072 rev = zeros(nRxns,1);
+0073 lb = zeros(nRxns,1);
+0074 ub = zeros(nRxns,1);
+0075 c = zeros(nRxns,1);
+0076 rxns = cell(nRxns,1);
+0077 rules = cell(nRxns,1);
+0078 genes = cell(nRxns,1);
+0079 allGenes = {};
+0080 h = waitbar(0,<span class="string">'Reading SBML file ...'</span>);
+0081 hasNotesField = false;
+0082 <span class="keyword">for</span> i = 1:nRxns
+0083     <span class="keyword">if</span> mod(i,10) == 0
+0084         waitbar(i/nRxns,h);
+0085     <span class="keyword">end</span>
+0086     <span class="comment">% Read the gpra from the notes field</span>
+0087     notesField = modelSBML.reaction(i).notes;
+0088     <span class="keyword">if</span> (~isempty(notesField))
+0089         [geneList,rule,subSystem,grRule,formula,confidenceScore, citation, comment, ecNumber] = <a href="#_sub1" class="code" title="subfunction [genes,rule,subSystem,grRule,formula,confidenceScore,citation,comment,ecNumber,charge] = parseSBMLNotesField(notesField)">parseSBMLNotesField</a>(notesField);
+0090         subSystems{i} = subSystem;
+0091         genes{i} = geneList;
+0092         allGenes = [allGenes geneList];
+0093         rules{i} = rule;
+0094         grRules{i} = grRule;
+0095         hasNotesField = true;
+0096         confidenceScores{i}= confidenceScore;
+0097         citations{i} = citation;
+0098         comments{i} = comment;
+0099         ecNumbers{i} = ecNumber;
+0100     <span class="keyword">end</span>
+0101     rev(i) = modelSBML.reaction(i).reversible;
+0102     rxnNameTmp = regexprep(modelSBML.reaction(i).name,<span class="string">'^R_'</span>,<span class="string">''</span>);
+0103     rxnNames{i} = regexprep(rxnNameTmp,<span class="string">'_+'</span>,<span class="string">' '</span>);
+0104     rxnsTmp = regexprep(modelSBML.reaction(i).id,<span class="string">'^R_'</span>,<span class="string">''</span>);
+0105     rxns{i} = <a href="#_sub3" class="code" title="subfunction str = cleanUpFormatting(str)">cleanUpFormatting</a>(rxnsTmp);
+0106     <span class="comment">% Construct S-matrix</span>
+0107     reactantStruct = modelSBML.reaction(i).reactant;
+0108     <span class="keyword">for</span> j = 1:length(reactantStruct)
+0109         speciesID = find(strcmp(reactantStruct(j).species,speciesList));
+0110         <span class="keyword">if</span> (~isempty(speciesID))
+0111             stoichCoeff = reactantStruct(j).stoichiometry;
+0112             S(speciesID,i) = -stoichCoeff;
+0113         <span class="keyword">end</span>
+0114     <span class="keyword">end</span>
+0115     productStruct = modelSBML.reaction(i).product;
+0116     <span class="keyword">for</span> j = 1:length(productStruct)
+0117         speciesID = find(strcmp(productStruct(j).species,speciesList));
+0118         <span class="keyword">if</span> (~isempty(speciesID))
+0119             stoichCoeff = productStruct(j).stoichiometry;
+0120             S(speciesID,i) = stoichCoeff;
+0121         <span class="keyword">end</span>
+0122     <span class="keyword">end</span>
+0123     <span class="keyword">if</span> isfield(modelSBML.reaction(i).kineticLaw,<span class="string">'parameter'</span>)
+0124         parameters = modelSBML.reaction(i).kineticLaw.parameter;
+0125     <span class="keyword">else</span>
+0126         parameters =[];
+0127     <span class="keyword">end</span>
+0128     <span class="keyword">if</span> (~isempty(parameters))
+0129         <span class="keyword">for</span> j = 1:length(parameters)
+0130             paramStruct = parameters(j);
+0131             <span class="keyword">switch</span> paramStruct.id
+0132                 <span class="keyword">case</span> <span class="string">'LOWER_BOUND'</span>
+0133                     lb(i) = paramStruct.value;
+0134                     <span class="keyword">if</span> (lb(i) &lt; -defaultBound)
+0135                         lb(i) = -defaultBound;
+0136                     <span class="keyword">end</span>
+0137                 <span class="keyword">case</span> <span class="string">'UPPER_BOUND'</span>
+0138                     ub(i) = paramStruct.value;
+0139                     <span class="keyword">if</span> (ub(i) &gt; defaultBound)
+0140                         ub(i) = defaultBound;
+0141                     <span class="keyword">end</span>
+0142                 <span class="keyword">case</span> <span class="string">'OBJECTIVE_COEFFICIENT'</span>
+0143                     c(i) = paramStruct.value;
+0144             <span class="keyword">end</span>
+0145         <span class="keyword">end</span>
+0146     <span class="keyword">else</span>
+0147         ub(i) = defaultBound;
+0148         <span class="keyword">if</span> (rev(i) == 1)
+0149             lb(i) = -defaultBound;
+0150         <span class="keyword">else</span>
+0151             lb(i) = 0;
+0152         <span class="keyword">end</span>
+0153     <span class="keyword">end</span>
+0154 <span class="keyword">end</span>
+0155 <span class="comment">%close the waitbar if this is matlab</span>
+0156 <span class="keyword">if</span> ( regexp( version, <span class="string">'R20'</span>) )
+0157     close(h);
+0158 <span class="keyword">end</span>
+0159 allGenes = unique(allGenes);
+0160 
+0161 <span class="comment">%% Construct gene to rxn mapping</span>
+0162 <span class="keyword">if</span> (hasNotesField)
+0163     
+0164     rxnGeneMat = sparse(nRxns,length(allGenes));
+0165     h = waitbar(0,<span class="string">'Constructing GPR mapping ...'</span>);
+0166     <span class="keyword">for</span> i = 1:nRxns
+0167         <span class="keyword">if</span> mod(i,10) == 0
+0168             waitbar(i/nRxns,h);
+0169         <span class="keyword">end</span>
+0170         <span class="keyword">if</span> iscell(genes{i})
+0171             [tmp,geneInd] = ismember(genes{i},allGenes);
+0172         <span class="keyword">else</span>
+0173             [tmp,geneInd] = ismember(num2cell(genes{i}),allGenes);
+0174         <span class="keyword">end</span>
+0175         
+0176         rxnGeneMat(i,geneInd) = 1;
+0177         <span class="keyword">for</span> j = 1:length(geneInd)
+0178             <span class="comment">%rules{i} = strrep(rules{i},['x(' num2str(j) ')'],['x(' num2str(geneInd(j)) ')']);</span>
+0179             rules{i} = strrep(rules{i},[<span class="string">'x('</span> num2str(j) <span class="string">')'</span>],[<span class="string">'x('</span> num2str(geneInd(j)) <span class="string">'_TMP_)'</span>]);
+0180         <span class="keyword">end</span>
+0181         rules{i} = strrep(rules{i},<span class="string">'_TMP_'</span>,<span class="string">''</span>);
+0182     <span class="keyword">end</span>
+0183     <span class="comment">%close the waitbar if this is matlab</span>
+0184     <span class="keyword">if</span> ( regexp( version, <span class="string">'R20'</span>) )
+0185         close(h);
+0186     <span class="keyword">end</span>
+0187     
+0188 <span class="keyword">end</span>
+0189 
+0190 <span class="comment">%% Construct metabolite list</span>
+0191 mets = cell(nMets,1);
+0192 compartmentList = cell(length(modelSBML.compartment),1);
+0193 <span class="keyword">if</span> isempty(compSymbolList), useCompList = true; <span class="keyword">else</span> useCompList = false; <span class="keyword">end</span>
+0194 <span class="keyword">for</span> i=1:length(modelSBML.compartment)
+0195     compartmentList{i} = modelSBML.compartment(i).id;
+0196 <span class="keyword">end</span>
+0197 
+0198 h = waitbar(0,<span class="string">'Constructing metabolite lists ...'</span>);
+0199 hasAnnotationField = 0;
+0200 <span class="keyword">for</span> i = 1:nMets
+0201     <span class="keyword">if</span> mod(i,10) == 0
+0202         waitbar(i/nMets,h);
+0203     <span class="keyword">end</span>
+0204     <span class="comment">% Parse metabolite id's</span>
+0205     <span class="comment">% Get rid of the M_ in the beginning of metabolite id's</span>
+0206     metID = regexprep(speciesList{i},<span class="string">'^M_'</span>,<span class="string">''</span>);
+0207     metID = regexprep(metID,<span class="string">'^_'</span>,<span class="string">''</span>);
+0208     <span class="comment">% Find compartment id</span>
+0209     tmpCell = {};
+0210     <span class="keyword">if</span> useCompList
+0211         <span class="keyword">for</span> j=1:length(compartmentList)
+0212             tmpCell = regexp(metID,[<span class="string">'_('</span> compartmentList{j} <span class="string">')$'</span>],<span class="string">'tokens'</span>);
+0213             <span class="keyword">if</span> ~isempty(tmpCell), <span class="keyword">break</span>; <span class="keyword">end</span>
+0214         <span class="keyword">end</span>
+0215         <span class="keyword">if</span> isempty(tmpCell), useCompList = false; <span class="keyword">end</span>
+0216     <span class="keyword">elseif</span> ~isempty(compSymbolList)
+0217         <span class="keyword">for</span> j = 1: length(compSymbolList)
+0218             tmpCell = regexp(metID,[<span class="string">'_('</span> compSymbolList{j} <span class="string">')$'</span>],<span class="string">'tokens'</span>);
+0219             <span class="keyword">if</span> ~isempty(tmpCell), <span class="keyword">break</span>; <span class="keyword">end</span>
+0220         <span class="keyword">end</span>
+0221     <span class="keyword">end</span>
+0222     <span class="keyword">if</span> isempty(tmpCell), tmpCell = regexp(metID,<span class="string">'_(.)$'</span>,<span class="string">'tokens'</span>); <span class="keyword">end</span>
+0223     <span class="keyword">if</span> ~isempty(tmpCell)
+0224         compID = tmpCell{1};
+0225         metTmp = [regexprep(metID,[<span class="string">'_'</span> compID{1} <span class="string">'$'</span>],<span class="string">''</span>) <span class="string">'['</span> compID{1} <span class="string">']'</span>];
+0226 <span class="comment">%         metTmp = regexprep(metTmp,'_+','-');</span>
+0227 <span class="comment">%         metTmp = regexprep(metTmp,'-DASH-','-');%%%</span>
+0228     <span class="keyword">else</span>
+0229         metTmp = metID;
+0230     <span class="keyword">end</span>
+0231     <span class="comment">%Clean up met ID</span>
+0232     mets{i} = <a href="#_sub3" class="code" title="subfunction str = cleanUpFormatting(str)">cleanUpFormatting</a>(metTmp);
+0233     <span class="comment">% Parse metabolite names</span>
+0234     <span class="comment">% Clean up some of the weird stuff in the sbml files</span>
+0235     metNamesTmp = regexprep(tmpSpecies(i).name,<span class="string">'^M_'</span>,<span class="string">''</span>);
+0236     metNamesTmp = <a href="#_sub3" class="code" title="subfunction str = cleanUpFormatting(str)">cleanUpFormatting</a>(metNamesTmp);
+0237     metNamesTmp = regexprep(metNamesTmp,<span class="string">'^_'</span>,<span class="string">''</span>);
+0238 <span class="comment">%     metNamesTmp = strrep(metNamesTmp,'_','-');</span>
+0239     metNamesTmp = regexprep(metNamesTmp,<span class="string">'-+'</span>,<span class="string">'-'</span>);
+0240     metNamesTmp = regexprep(metNamesTmp,<span class="string">'-$'</span>,<span class="string">''</span>);
+0241     metNamesAlt{i} = metNamesTmp;
+0242     <span class="comment">% Separate formulas from names</span>
+0243     <span class="comment">%[tmp,tmp,tmp,tmp,tokens] = regexp(metNamesTmp,'(.*)-((([A(Ag)(As)C(Ca)(Cd)(Cl)(Co)(Cu)F(Fe)H(Hg)IKLM(Mg)(Mn)N(Na)(Ni)OPRS(Se)UWXY(Zn)]?)(\d*)))*$');</span>
+0244     <span class="keyword">if</span> (~haveFormulasFlag)
+0245         [tmp,tmp,tmp,tmp,tokens] = regexp(metNamesTmp,<span class="string">'(.*)_((((A|Ag|As|C|Ca|Cd|Cl|Co|Cu|F|Fe|H|Hg|I|K|L|M|Mg|Mn|Mo|N|Na|Ni|O|P|R|S|Se|U|W|X|Y|Zn)?)(\d*)))*$'</span>);
+0246         <span class="keyword">if</span> (isempty(tokens))
+0247             <span class="keyword">if</span> length(metFormulas)&lt;i||(metFormulas{i}==<span class="string">''</span>)
+0248                 metFormulas{i} = <span class="string">''</span>;
+0249             <span class="keyword">end</span>
+0250             metNames{i} = metNamesTmp;
+0251         <span class="keyword">else</span>
+0252             formulaCount = formulaCount + 1;
+0253             metFormulas{i} = tokens{1}{2};
+0254             metNames{i} = tokens{1}{1};
+0255         <span class="keyword">end</span>
+0256     <span class="keyword">else</span>
+0257         metNames{i} = metNamesTmp;
+0258     <span class="keyword">end</span>
+0259     <span class="keyword">if</span> isfield(modelSBML.species(i),<span class="string">'annotation'</span>)
+0260         hasAnnotationField = 1;
+0261         [metCHEBI,metKEGG,metPubChem,metInChI] = <a href="#_sub2" class="code" title="subfunction [metCHEBI,metKEGG,metPubChem,metInChI] = parseSBMLAnnotationField(annotationField)">parseSBMLAnnotationField</a>(modelSBML.species(i).annotation);
+0262         metCHEBIID{i} = metCHEBI;
+0263         metKEGGID{i} = metKEGG;
+0264         metPubChemID{i} = metPubChem;
+0265         metInChIString{i} = metInChI;
+0266     <span class="keyword">end</span>
+0267 <span class="keyword">end</span>
+0268 <span class="keyword">if</span> ( regexp( version, <span class="string">'R20'</span>) )
+0269     close(h);
+0270 <span class="keyword">end</span>
+0271 
+0272 <span class="comment">%% Collect everything into a structure</span>
+0273 model.rxns = rxns;
+0274 model.mets = mets;
+0275 model.S = S;
+0276 model.rev = rev;
+0277 model.lb = lb;
+0278 model.ub = ub;
+0279 model.c = c;
+0280 model.metCharge = transpose(chargeList);
+0281 <span class="keyword">if</span> (hasNotesField)
+0282     model.rules = rules;
+0283     model.genes = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(allGenes);
+0284     model.rxnGeneMat = rxnGeneMat;
+0285     model.grRules = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(grRules);
+0286     model.subSystems = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(subSystems);
+0287     model.confidenceScores = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(confidenceScores);
+0288     model.rxnReferences = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(citations);
+0289     model.rxnECNumbers = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(ecNumbers);
+0290     model.rxnNotes = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(comments);
+0291 <span class="keyword">end</span>
+0292 model.rxnNames = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(rxnNames);
+0293 <span class="comment">% Only include formulas if at least 90% of metabolites have them (otherwise</span>
+0294 <span class="comment">% the &quot;formulas&quot; are probably just parts of metabolite names)</span>
+0295 <span class="keyword">if</span> (formulaCount &lt; 0.9*nMets)
+0296     model.metNames = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metNamesAlt);
+0297 <span class="keyword">else</span>
+0298     model.metNames = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metNames);
+0299     model.metFormulas = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metFormulas);
+0300 <span class="keyword">end</span>
+0301 <span class="keyword">if</span> (hasAnnotationField)
+0302     model.metChEBIID = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metCHEBIID);
+0303     model.metKEGGID = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metKEGGID);
+0304     model.metPubChemID = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metPubChemID);
+0305     model.metInChIString = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(metInChIString);
+0306 <span class="keyword">end</span>
+0307 
+0308 <span class="comment">%%</span>
+0309 <a name="_sub1" href="#_subfunctions" class="code">function [genes,rule,subSystem,grRule,formula,confidenceScore,citation,comment,ecNumber,charge] = parseSBMLNotesField(notesField)</a>
+0310 <span class="comment">%parseSBMLNotesField Parse the notes field of an SBML file to extract</span>
+0311 <span class="comment">%gene-rxn associations</span>
+0312 <span class="comment">%</span>
+0313 <span class="comment">% [genes,rule] = parseSBMLNotesField(notesField)</span>
+0314 <span class="comment">%</span>
+0315 <span class="comment">% Markus Herrgard 8/7/06</span>
+0316 <span class="comment">% Ines Thiele 1/27/10 Added new fields</span>
+0317 <span class="comment">% Handle different notes fields</span>
+0318 <span class="keyword">if</span> isempty(regexp(notesField,<span class="string">'html:p'</span>, <span class="string">'once'</span>))
+0319     tag = <span class="string">'p'</span>;
+0320 <span class="keyword">else</span>
+0321     tag = <span class="string">'html:p'</span>;
+0322 <span class="keyword">end</span>
+0323 
+0324 subSystem = <span class="string">''</span>;
+0325 grRule = <span class="string">''</span>;
+0326 genes = {};
+0327 rule = <span class="string">''</span>;
+0328 formula = <span class="string">''</span>;
+0329 confidenceScore = <span class="string">''</span>;
+0330 citation = <span class="string">''</span>;
+0331 ecNumber = <span class="string">''</span>;
+0332 comment = <span class="string">''</span>;
+0333 charge = [];
+0334 Comment = 0;
+0335 
+0336 [tmp,fieldList] = regexp(notesField,[<span class="string">'&lt;'</span> tag <span class="string">'&gt;.*?&lt;/'</span> tag <span class="string">'&gt;'</span>],<span class="string">'tokens'</span>,<span class="string">'match'</span>);
+0337 
+0338 <span class="keyword">for</span> i = 1:length(fieldList)
+0339     fieldTmp = regexp(fieldList{i},[<span class="string">'&lt;'</span> tag <span class="string">'&gt;(.*)&lt;/'</span> tag <span class="string">'&gt;'</span>],<span class="string">'tokens'</span>);
+0340     fieldStr = fieldTmp{1}{1};
+0341     <span class="keyword">if</span> (regexp(fieldStr,<span class="string">'GENE_ASSOCIATION'</span>))
+0342         gprStr = regexprep(strrep(fieldStr,<span class="string">'GENE_ASSOCIATION:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0343         grRule = gprStr;
+0344         [genes,rule] = <a href="../../cobra/tools/parseBoolean.html" class="code" title="function [elements,newRule] = parseBoolean(str,tokens,allowedElementChars)">parseBoolean</a>(gprStr);
+0345     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'GENE ASSOCIATION'</span>))
+0346         gprStr = regexprep(strrep(fieldStr,<span class="string">'GENE ASSOCIATION:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0347         grRule = gprStr;
+0348         [genes,rule] = <a href="../../cobra/tools/parseBoolean.html" class="code" title="function [elements,newRule] = parseBoolean(str,tokens,allowedElementChars)">parseBoolean</a>(gprStr);
+0349     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'SUBSYSTEM'</span>))
+0350         subSystem = regexprep(strrep(fieldStr,<span class="string">'SUBSYSTEM:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0351         subSystem = strrep(subSystem,<span class="string">'S_'</span>,<span class="string">''</span>);
+0352         subSystem = regexprep(subSystem,<span class="string">'_+'</span>,<span class="string">' '</span>);
+0353         <span class="keyword">if</span> (isempty(subSystem))
+0354             subSystem = <span class="string">'Exchange'</span>;
+0355         <span class="keyword">end</span>
+0356     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'EC Number'</span>))
+0357         ecNumber = regexprep(strrep(fieldStr,<span class="string">'EC Number:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0358     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'FORMULA'</span>))
+0359         formula = regexprep(strrep(fieldStr,<span class="string">'FORMULA:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0360     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'CHARGE'</span>))
+0361         charge = str2num(regexprep(strrep(fieldStr,<span class="string">'CHARGE:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>));
+0362     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'AUTHORS'</span>))
+0363         <span class="keyword">if</span> isempty(citation)
+0364             citation = strcat(regexprep(strrep(fieldStr,<span class="string">'AUTHORS:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>));
+0365         <span class="keyword">else</span>
+0366             citation = strcat(citation,<span class="string">';'</span>,regexprep(strrep(fieldStr,<span class="string">'AUTHORS:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>));
+0367         <span class="keyword">end</span>
+0368     <span class="keyword">elseif</span> Comment == 1 &amp;&amp; isempty(regexp(fieldStr,<span class="string">'genes:'</span>, <span class="string">'once'</span>))
+0369         Comment = 0;
+0370         comment = fieldStr;
+0371     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'Confidence'</span>))
+0372         confidenceScore = regexprep(strrep(fieldStr,<span class="string">'Confidence Level:'</span>,<span class="string">''</span>),<span class="string">'^(\s)+'</span>,<span class="string">''</span>);
+0373         Comment = 1;
+0374     <span class="keyword">end</span>
+0375 <span class="keyword">end</span>
+0376 <span class="comment">%%</span>
+0377 <a name="_sub2" href="#_subfunctions" class="code">function [metCHEBI,metKEGG,metPubChem,metInChI] = parseSBMLAnnotationField(annotationField)</a>
+0378 <span class="comment">%parseSBMLAnnotationField Parse the annotation field of an SBML file to extract</span>
+0379 <span class="comment">%metabolite information associations</span>
+0380 <span class="comment">%</span>
+0381 <span class="comment">% [genes,rule] = parseSBMLAnnotationField(annotationField)</span>
+0382 <span class="comment">%</span>
+0383 <span class="comment">% Ines Thiele 1/27/10 Added new fields</span>
+0384 <span class="comment">% Handle different notes fields</span>
+0385 
+0386 
+0387 metPubChem = <span class="string">''</span>;
+0388 metCHEBI = <span class="string">''</span>;
+0389 metKEGG = <span class="string">''</span>;
+0390 metPubChem = <span class="string">''</span>;
+0391 metInChI=<span class="string">''</span>;
+0392 
+0393 [tmp,fieldList] = regexp(annotationField,<span class="string">'&lt;rdf:li rdf:resource=&quot;urn:miriam:(\w+).*?&quot;/&gt;'</span>,<span class="string">'tokens'</span>,<span class="string">'match'</span>);
+0394 
+0395 <span class="comment">%fieldTmp = regexp(fieldList{i},['&lt;' tag '&gt;(.*)&lt;/' tag '&gt;'],'tokens');</span>
+0396 <span class="keyword">for</span> i = 1:length(fieldList)
+0397     fieldTmp = regexp(fieldList{i},[<span class="string">'&lt;rdf:li rdf:resource=&quot;urn:miriam:(.*)&quot;/&gt;'</span>],<span class="string">'tokens'</span>);
+0398     fieldStr = fieldTmp{1}{1};
+0399     <span class="keyword">if</span> (regexp(fieldStr,<span class="string">'obo.chebi'</span>))
+0400         metCHEBI = strrep(fieldStr,<span class="string">'obo.chebi:CHEBI%'</span>,<span class="string">''</span>);
+0401     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'kegg.compound'</span>))
+0402         metKEGG = strrep(fieldStr,<span class="string">'kegg.compound:'</span>,<span class="string">''</span>);
+0403     <span class="keyword">elseif</span> (regexp(fieldStr,<span class="string">'pubchem.substance'</span>))
+0404         metPubChem = strrep(fieldStr,<span class="string">'pubchem.substance:'</span>,<span class="string">''</span>);
+0405     <span class="keyword">end</span>
+0406 <span class="keyword">end</span>
+0407 <span class="comment">% get InChI string</span>
+0408 fieldTmp = regexp(annotationField,<span class="string">'&lt;in:inchi xmlns:in=&quot;http://biomodels.net/inchi&quot; metaid=&quot;(.*?)&quot;&gt;(.*?)&lt;/in:inchi&gt;'</span>,<span class="string">'tokens'</span>);
+0409 <span class="keyword">if</span> ~isempty(fieldTmp)
+0410 fieldStr = fieldTmp{1}{2};
+0411 <span class="keyword">if</span> (regexp(fieldStr,<span class="string">'InChI'</span>))
+0412     metInChI = strrep(fieldStr,<span class="string">'InChI='</span>,<span class="string">''</span>);
+0413 <span class="keyword">end</span>
+0414 <span class="keyword">end</span>
+0415 
+0416 <span class="comment">%% Cleanup Formatting</span>
+0417 <a name="_sub3" href="#_subfunctions" class="code">function str = cleanUpFormatting(str)</a>
+0418 str = strrep(str,<span class="string">'-DASH-'</span>,<span class="string">'-'</span>);
+0419 str = strrep(str,<span class="string">'_DASH_'</span>,<span class="string">'-'</span>);
+0420 str = strrep(str,<span class="string">'_FSLASH_'</span>,<span class="string">'/'</span>);
+0421 str = strrep(str,<span class="string">'_BSLASH_'</span>,<span class="string">'\'</span>);
+0422 str = strrep(str,<span class="string">'_LPAREN_'</span>,<span class="string">'('</span>);
+0423 str = strrep(str,<span class="string">'_LSQBKT_'</span>,<span class="string">'['</span>);
+0424 str = strrep(str,<span class="string">'_RSQBKT_'</span>,<span class="string">']'</span>);
+0425 str = strrep(str,<span class="string">'_RPAREN_'</span>,<span class="string">')'</span>);
+0426 str = strrep(str,<span class="string">'_COMMA_'</span>,<span class="string">','</span>);
+0427 str = strrep(str,<span class="string">'_PERIOD_'</span>,<span class="string">'.'</span>);
+0428 str = strrep(str,<span class="string">'_APOS_'</span>,<span class="string">''''</span>);
+0429 str = regexprep(str,<span class="string">'_e_$'</span>,<span class="string">'(e)'</span>);
+0430 str = regexprep(str,<span class="string">'_e$'</span>,<span class="string">'(e)'</span>);
+0431 str = strrep(str,<span class="string">'&amp;amp;'</span>,<span class="string">'&amp;'</span>);
+0432 str = strrep(str,<span class="string">'&amp;lt;'</span>,<span class="string">'&lt;'</span>);
+0433 str = strrep(str,<span class="string">'&amp;gt;'</span>,<span class="string">'&gt;'</span>);
+0434 str = strrep(str,<span class="string">'&amp;quot;'</span>,<span class="string">'&quot;'</span>);</pre></div>
+<hr><address>Generated on Sun 26-Dec-2010 12:06:07 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>

@@ -1,0 +1,9 @@
+For convenience, we provide libSBML, the SBMLToolbox, and glpk_mex in external/toolboxes.  If you do not wish to use these items please delete the directories.
+
+Cobra_Install_Path is the path to the top level directory for the COBRA Toolbox
+Update Shared Library Path — Mac OS X and GNU/Linux Only
+    -Mac OS: DYLD_LIBRARY_PATH=Cobra_Install_Path/external/toolboxes/SBMLToolbox_3.1.2/toolbox/
+    -GNU/Linux: LD_LIBRARY_PATH=Cobra_Install_Path/external/toolboxes/SBMLToolbox_3.1.2/toolbox/
+
+From MATLAB, run
+  initCobraToolbox

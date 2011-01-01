@@ -1,0 +1,251 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of solveCobraMIQP</title>
+  <meta name="keywords" content="solveCobraMIQP">
+  <meta name="description" content="solveCobraQP Solve constraint-based QP problems">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2003 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<!-- ../menu.html cobra --><!-- menu.html solvers -->
+<h1>solveCobraMIQP
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>solveCobraQP Solve constraint-based QP problems</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="box"><strong>function solution = solveCobraMIQP(MIQPproblem,varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre class="comment">solveCobraQP Solve constraint-based QP problems
+
+ solution = solveCobraQP(MIQPproblem,solver,verbFlag,solverParams)
+
+ % Solves problems of the type 
+
+      min   osense * 0.5 x' * F * x + osense * c' * x
+      s/t   lb &lt;= x &lt;= ub
+            A * x  &lt;=/=/&gt;= b
+            xi = integer
+
+INPUT
+MIQPproblem    Structure containing the following fields describing the QP
+               problem to be solved
+  A                LHS matrix
+  b                RHS vector
+  F                F matrix for quadratic objective (see above)
+  c                Objective coeff vector
+  lb               Lower bound vector
+  ub               Upper bound vector
+  osense           Objective sense (-1 max, +1 min)
+  csense           Constraint senses, a string containting the constraint 
+                   sense for each row in A ('E', equality, 'G' greater 
+                   than, 'L' less than).
+
+OPTIONAL INPUTS
+ Optional parameters can be entered using parameters structure or as
+ parameter followed by parameter value: i.e. ,'printLevel',3)
+
+ parameters    Structure containing optional parameters as fields.
+  printLevel   Print level for solver
+  saveInput    Saves LPproblem to filename specified in field. 
+               Setting parameters = 'default' uses default setting set in
+               getCobraSolverParameters.
+
+ the solver defined in the CBT_MIQP_SOLVER global variable (set using
+ changeCobraSolver). Solvers currently available are 'tomlab_cplex'
+
+OUTPUT
+ solution      Structure containing the following fields describing a QP
+               solution
+  full             Full QP solution vector
+  obj              Objective value
+  solver           Solver used to solve QP problem
+  stat             Solver status in standardized form (see below)
+                       1   Optimal solution found
+                       2   Unbounded solution
+                       0   Infeasible QP
+                      -1   No optimal solution found (time limit etc)
+                       3   Solution exists but with problems
+  origStat         Original status returned by the specific solver 
+  time             Solve time in seconds
+
+
+ Markus Herrgard 6/8/07</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>	This function gets the specified parameters in paramNames from</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../../matlabicon.gif)">
+<li><a href="../../cobra/optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>	optimizeCbModel Solve a flux balance analysis problem</li></ul>
+<!-- crossreference -->
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function solution = solveCobraMIQP(MIQPproblem,varargin)</a>
+0002 <span class="comment">%solveCobraQP Solve constraint-based QP problems</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% solution = solveCobraQP(MIQPproblem,solver,verbFlag,solverParams)</span>
+0005 <span class="comment">%</span>
+0006 <span class="comment">% % Solves problems of the type</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">%      min   osense * 0.5 x' * F * x + osense * c' * x</span>
+0009 <span class="comment">%      s/t   lb &lt;= x &lt;= ub</span>
+0010 <span class="comment">%            A * x  &lt;=/=/&gt;= b</span>
+0011 <span class="comment">%            xi = integer</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">%INPUT</span>
+0014 <span class="comment">%MIQPproblem    Structure containing the following fields describing the QP</span>
+0015 <span class="comment">%               problem to be solved</span>
+0016 <span class="comment">%  A                LHS matrix</span>
+0017 <span class="comment">%  b                RHS vector</span>
+0018 <span class="comment">%  F                F matrix for quadratic objective (see above)</span>
+0019 <span class="comment">%  c                Objective coeff vector</span>
+0020 <span class="comment">%  lb               Lower bound vector</span>
+0021 <span class="comment">%  ub               Upper bound vector</span>
+0022 <span class="comment">%  osense           Objective sense (-1 max, +1 min)</span>
+0023 <span class="comment">%  csense           Constraint senses, a string containting the constraint</span>
+0024 <span class="comment">%                   sense for each row in A ('E', equality, 'G' greater</span>
+0025 <span class="comment">%                   than, 'L' less than).</span>
+0026 <span class="comment">%</span>
+0027 <span class="comment">%OPTIONAL INPUTS</span>
+0028 <span class="comment">% Optional parameters can be entered using parameters structure or as</span>
+0029 <span class="comment">% parameter followed by parameter value: i.e. ,'printLevel',3)</span>
+0030 <span class="comment">%</span>
+0031 <span class="comment">% parameters    Structure containing optional parameters as fields.</span>
+0032 <span class="comment">%  printLevel   Print level for solver</span>
+0033 <span class="comment">%  saveInput    Saves LPproblem to filename specified in field.</span>
+0034 <span class="comment">%               Setting parameters = 'default' uses default setting set in</span>
+0035 <span class="comment">%               getCobraSolverParameters.</span>
+0036 <span class="comment">%</span>
+0037 <span class="comment">% the solver defined in the CBT_MIQP_SOLVER global variable (set using</span>
+0038 <span class="comment">% changeCobraSolver). Solvers currently available are 'tomlab_cplex'</span>
+0039 <span class="comment">%</span>
+0040 <span class="comment">%OUTPUT</span>
+0041 <span class="comment">% solution      Structure containing the following fields describing a QP</span>
+0042 <span class="comment">%               solution</span>
+0043 <span class="comment">%  full             Full QP solution vector</span>
+0044 <span class="comment">%  obj              Objective value</span>
+0045 <span class="comment">%  solver           Solver used to solve QP problem</span>
+0046 <span class="comment">%  stat             Solver status in standardized form (see below)</span>
+0047 <span class="comment">%                       1   Optimal solution found</span>
+0048 <span class="comment">%                       2   Unbounded solution</span>
+0049 <span class="comment">%                       0   Infeasible QP</span>
+0050 <span class="comment">%                      -1   No optimal solution found (time limit etc)</span>
+0051 <span class="comment">%                       3   Solution exists but with problems</span>
+0052 <span class="comment">%  origStat         Original status returned by the specific solver</span>
+0053 <span class="comment">%  time             Solve time in seconds</span>
+0054 <span class="comment">%</span>
+0055 <span class="comment">%</span>
+0056 <span class="comment">% Markus Herrgard 6/8/07</span>
+0057 
+0058 <span class="keyword">global</span> CBT_MIQP_SOLVER;
+0059 solver = CBT_MIQP_SOLVER;
+0060 
+0061 <span class="comment">%optional parameters</span>
+0062 optParamNames = {<span class="string">'printLevel'</span>, <span class="string">'saveInput'</span>, <span class="string">'timeLimit'</span>};
+0063 parameters = <span class="string">''</span>;
+0064 <span class="keyword">if</span> nargin ~=1
+0065     <span class="keyword">if</span> mod(length(varargin),2)==0
+0066         <span class="keyword">for</span> i=1:2:length(varargin)-1
+0067             <span class="keyword">if</span> ismember(varargin{i},optParamNames)
+0068                 parameters.(varargin{i}) = varargin{i+1};
+0069             <span class="keyword">else</span>
+0070                 error([varargin{i} <span class="string">' is not a valid optional parameter'</span>]);
+0071             <span class="keyword">end</span>
+0072         <span class="keyword">end</span>
+0073     <span class="keyword">elseif</span> strcmp(varargin{1},<span class="string">'default'</span>)
+0074         parameters = <span class="string">'default'</span>;
+0075     <span class="keyword">elseif</span> isstruct(varargin{1})
+0076         parameters = varargin{1};
+0077     <span class="keyword">else</span>
+0078         display(<span class="string">'Warning: Invalid number of parameters/values'</span>)
+0079         solution=[];
+0080         <span class="keyword">return</span>;
+0081     <span class="keyword">end</span>
+0082 <span class="keyword">end</span>
+0083 [printLevel, saveInput, timeLimit] = <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'QP'</span>,optParamNames,parameters);
+0084 
+0085 [A,b,F,c,lb,ub,csense,osense, vartype] = <span class="keyword">...</span>
+0086     deal(MIQPproblem.A,MIQPproblem.b,MIQPproblem.F,MIQPproblem.c,MIQPproblem.lb,MIQPproblem.ub,<span class="keyword">...</span>
+0087     MIQPproblem.csense,MIQPproblem.osense, MIQPproblem.vartype);
+0088 
+0089 t_start = clock;
+0090 <span class="keyword">switch</span> solver
+0091 <span class="comment">%% CPLEX through TOMLAB</span>
+0092     <span class="keyword">case</span> <span class="string">'tomlab_cplex'</span>
+0093         <span class="keyword">if</span> (~isempty(csense))
+0094             b_L(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0095             b_U(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0096             b_L(csense == <span class="string">'G'</span>) = b(csense == <span class="string">'G'</span>);
+0097             b_U(csense == <span class="string">'G'</span>) = inf;
+0098             b_L(csense == <span class="string">'L'</span>) = -inf;
+0099             b_U(csense == <span class="string">'L'</span>) = b(csense == <span class="string">'L'</span>);
+0100         <span class="keyword">else</span>
+0101             b_L = b;
+0102             b_U = b;
+0103         <span class="keyword">end</span>
+0104         intVars = find((vartype == <span class="string">'B'</span>) | (vartype == <span class="string">'I'</span>));
+0105         <span class="comment">%tomlabProblem = qpAssign(osense*F,osense*c,A,b_L,b_U,lb,ub,[],'CobraQP');</span>
+0106         tomlabProblem  = miqpAssign(osense*F, osense*c, A, b_L, b_U, lb, ub,[], <span class="keyword">...</span>
+0107                              intVars, [],[],[],<span class="string">'CobraMIQP'</span>);
+0108         tomlabProblem.CPLEX.LogFile = <span class="string">'MIQPproblem.log'</span>;
+0109         
+0110         <span class="comment">%optional parameters</span>
+0111         PriLvl = printLevel;
+0112         
+0113         <span class="comment">%Save Input if selected</span>
+0114         <span class="keyword">if</span> ~isempty(saveInput)
+0115             fileName = parameters.saveInput;
+0116             <span class="keyword">if</span> ~find(regexp(fileName,<span class="string">'.mat'</span>))
+0117                 fileName = [fileName <span class="string">'.mat'</span>];
+0118             <span class="keyword">end</span>
+0119             display([<span class="string">'Saving MIQPproblem in '</span> fileName]);
+0120             save(fileName,<span class="string">'MIQPproblem'</span>)
+0121         <span class="keyword">end</span>
+0122         tomlabProblem.MIP.cpxControl.TILIM = timeLimit; <span class="comment">% time limit</span>
+0123         tomlabProblem.MIP.cpxControl.THREADS = 1; <span class="comment">% by default use only one thread</span>
+0124         Result = tomRun(<span class="string">'cplex'</span>, tomlabProblem, PriLvl);
+0125         
+0126         x = Result.x_k;
+0127         f = osense*Result.f_k;
+0128         stat = Result.Inform;
+0129         <span class="keyword">if</span> (stat == 1 ||stat == 101 || stat == 102)
+0130             solStat = 1; <span class="comment">% Optimal</span>
+0131         <span class="keyword">elseif</span> (stat == 3 || stat == 4)
+0132             solStat = 0; <span class="comment">% Infeasible</span>
+0133         <span class="keyword">elseif</span> (stat == 103)
+0134             solStat = 0; <span class="comment">% Integer Infeasible</span>
+0135         <span class="keyword">elseif</span> (stat == 2 || stat == 118 || stat == 119)
+0136             solStat = 2; <span class="comment">% Unbounded</span>
+0137         <span class="keyword">elseif</span> (stat == 106 || stat == 108 || stat == 110 || stat == 112 || stat == 114 || stat == 117)
+0138             solStat = -1; <span class="comment">% No integer solution exists</span>
+0139         <span class="keyword">elseif</span> (stat &gt;= 10)
+0140             solStat = -1; <span class="comment">% No optimal solution found (time or other limits reached, other infeasibility problems)</span>
+0141         <span class="keyword">else</span>
+0142             solStat = 3; <span class="comment">% Solution exists, but either scaling problems or not proven to be optimal</span>
+0143         <span class="keyword">end</span> 
+0144     <span class="keyword">otherwise</span>
+0145         error([<span class="string">'Unknown solver: '</span> solver]);
+0146 <span class="keyword">end</span>
+0147 <span class="comment">%%</span>
+0148 t = etime(clock, t_start);
+0149 
+0150 solution.obj = f;
+0151 solution.solver = solver;
+0152 solution.stat = solStat;
+0153 solution.origStat = stat; 
+0154 solution.time = t;
+0155 solution.full = x;</pre></div>
+<hr><address>Generated on Sun 26-Dec-2010 12:06:07 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+</body>
+</html>
