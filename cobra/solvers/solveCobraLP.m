@@ -154,23 +154,9 @@ switch solver
             csense(csense == 'E') = 'S';
             csense = columnVector(csense);
         end
-        % This hack is needed to fix a problem with fixed valued variables in
-        % the original implementation of glpkmex.
-        hackNeeded = true;
-        if (hackNeeded)
-            [lb,ub,A,b,csense] = glpkHack(lb,ub,A,b,csense);
-        end
         %glpk needs b to be full, not sparse -Ronan
         b=full(b);
         [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params);
-        if (origStat == -1 && ~hackNeeded)
-            fprintf('Problem with glpk solver - reformulating problem\n');
-            [lb,ub,A,b,csense] = glpkHack(lb,ub,A,b,csense);
-            [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params);
-            if (origStat ~= -1)
-                fprintf('Reformulation seems to have worked\n');
-            end
-        end
 
     case {'lindo_new','lindo_old'}
         %% LINDO
@@ -506,22 +492,6 @@ if ~strcmp(solver,'cplex_direct') && ~strcmp(solver,'mps')
     if ~exist('basis','var'), basis=[]; end
     [solution.full,solution.obj,solution.rcost,solution.dual,solution.solver,solution.stat,solution.origStat,solution.time,solution.basis] = ...
         deal(x,f,w,y,solver,stat,origStat,t,basis);
-end
-
-%% glpk hack.  The equality-constrained
-% variables are basically moved from lb/ub constraints to A*x = b
-% constraints
-function [lb,ub,A,b,csense] = glpkHack(lb,ub,A,b,csense)
-
-selConst = (lb == ub);
-nConst = sum(selConst);
-if (nConst > 0)
-    selConstMat = selMatrix(selConst);
-    A = [A;selConstMat];
-    b = [b;lb(selConst)];
-    lb(selConst) = lb(selConst) - 1;
-    ub(selConst) = ub(selConst) + 1;
-    csense((end+1):(end+nConst)) = 'S';
 end
 
 %% solveGlpk Solve actual LP problem using glpk and return relevant results
