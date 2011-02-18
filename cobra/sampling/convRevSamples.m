@@ -19,7 +19,7 @@ function [model,samples] = convRevSamples(model,samples)
 
 for i = 1:length(model.rxns)
   rxnName = model.rxns{i};
-  lastInd = regexp(rxnName,'_r');
+  lastInd = regexp(rxnName,'_r$');
   if (~isempty(lastInd))
     model.rxns{i} = rxnName(1:(lastInd-1));
     model.lb(i) = -model.ub(i);
