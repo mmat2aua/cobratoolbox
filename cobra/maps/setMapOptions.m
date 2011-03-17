@@ -1,14 +1,18 @@
-function options = setMapOptions(options,varargin)
+function options = setMapOptions(options, map, varargin)
 %setMapOptions set the values of the options fields
 %
-% options = setMapOptions(options,map,model,'property name',value,...)
-% options = setMapOptions(options,'property name',value,...)
+% options = setMapOptions(options, map, model,'property name',value,...)
+% options = setMapOptions(options, map, 'property name',value,...)
 %
 %INPUT
 % options           The options whose properties are to be set.
 %
+% map               The map corresponding to the options.  
+% 
+%
+%
 %OPTIONAL INPUT
-% map               The map corresponding to the options.
+%
 % model             The model which the values of the properties are
 %                   corresponding to.
 % property          Name of any field of the options to be set.
@@ -71,13 +75,12 @@ function options = setMapOptions(options,varargin)
 %OUTPUT
 % options       Options structure
 
-map = varargin{1};
 nNodes = size(map.molName,1);
 nEdges = size(map.connectionName,1);
 % if map and model are passed the data will be processed before assignment
-if ~isstr(varargin{1}) && ~isstr(varargin{2}) && isstr(varargin{3})
-    model = varargin{2};
-    for i = 3:2:size(varargin,2)
+if ~isstr(varargin{1}) && isstr(varargin{2})
+    model = varargin{1};
+    for i = 2:2:size(varargin,2)
         switch lower(varargin{i})
             case 'nodecolor'
                 conc = cell2mat(varargin(i+1));
@@ -301,7 +304,7 @@ if ~isstr(varargin{1}) && ~isstr(varargin{2}) && isstr(varargin{3})
         end
     end
     
-    % if map and model are not passed.
+    % if model is not passed.
 else
     for i = 1:2:size(varargin,2)
         switch lower(varargin{i})

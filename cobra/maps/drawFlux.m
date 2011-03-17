@@ -36,28 +36,6 @@ if nargin<4, options=[]; end
 if mod(length(varargin),2)==0
     for i=1:2:length(varargin)-1
         options = setMapOptions(options,map,model,varargin{i},varargin{i+1});
-%         switch lower(varargin{i})
-%             case 'nodeweight', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'nodecolor', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'edgeweight', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'edgecolor', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'edgearrowcolor', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'textsize', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'textcolor', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'othertextsize', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'othertextcolor', options = setMapOptions(map,model,options,varargin{i},varargin(i+1));
-%             case 'filename', options.fileName = varargin{i+1};
-%             case 'lb', options.lb = varargin{i+1};
-%             case 'ub', options.ub = varargin{i+1};
-%             case 'scaletype', options.scaleType = varargin{i+1};
-%             case 'colorscale', options.colorScale = varargin{i+1};
-%             case 'zerofluxwidth', options.zeroFluxWidth = varargin{i+1};
-%             case 'zerofluxcolor', options.zeroFluxColor = varargin{i+1};
-%             case 'rxndirflag', options.rxnDirFlag = varargin{i+1};
-%             case 'rxndirmultiplier', options.rxnDirMultipler = varargin{i+1};
-%             otherwise
-%                 
-%         end
     end
 else
     error('Invalid number of parameters/values');
