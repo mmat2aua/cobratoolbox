@@ -7,3 +7,10 @@ Update Shared Library Path — Mac OS X and GNU/Linux Only
 
 From MATLAB, run
   initCobraToolbox
+
+
+NOTE: If you do not have gurobi_mex and tomlab installed on your machine, you will get some warnings and some errors.  The COBRA Toolbox will try to use glpk if it cannot find gurobi for LP / MILP.  To solve any QP problems you need tomlab.
+
+After running initCobraToolbox, run
+  testAll
+to see what functions will work with your current configuration.  Note, it is likely that one or more functions will not work unless you have both gurobi and tomlab installed.
