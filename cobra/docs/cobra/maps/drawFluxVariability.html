@@ -46,7 +46,7 @@ Richard Que (03/2010)</pre></div>
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
 This function calls:
 <ul style="list-style-image:url(../../matlabicon.gif)">
-<li><a href="drawCbMap.html" class="code" title="function options = drawCbMap(map,options,varargin)">drawCbMap</a>	Draws a map with the specified optional parameters</li><li><a href="setMapOptions.html" class="code" title="function options = setMapOptions(options,varargin)">setMapOptions</a>	setMapOptions set the values of the options fields</li></ul>
+<li><a href="drawCbMap.html" class="code" title="function options = drawCbMap(map,options,varargin)">drawCbMap</a>	Draws a map with the specified optional parameters</li><li><a href="setMapOptions.html" class="code" title="function options = setMapOptions(options, map, varargin)">setMapOptions</a>	setMapOptions set the values of the options fields</li></ul>
 This function is called by:
 <ul style="list-style-image:url(../../matlabicon.gif)">
 </ul>
@@ -78,7 +78,7 @@ This function is called by:
 0022 <span class="keyword">if</span> ~isfield(options,<span class="string">'fluxVarColor'</span>), options.fluxVarColor = []; <span class="keyword">end</span>
 0023 <span class="keyword">if</span> mod(length(varargin),2)==0
 0024     <span class="keyword">for</span> i=1:2:length(varargin)-1
-0025         options = <a href="setMapOptions.html" class="code" title="function options = setMapOptions(options,varargin)">setMapOptions</a>(options,map,model,varargin{i},varargin{i+1});
+0025         options = <a href="setMapOptions.html" class="code" title="function options = setMapOptions(options, map, varargin)">setMapOptions</a>(options,map,model,varargin{i},varargin{i+1});
 0026 <span class="comment">%         switch lower(varargin{i})</span>
 0027 <span class="comment">%             case 'bidircolor', options.fluxVarColor.biDirColor = varargin{i+1};</span>
 0028 <span class="comment">%             case 'unidirirrcolor', options.fluxVarColor.uniDirIrrColor = varargin{i+1};</span>
@@ -148,8 +148,8 @@ This function is called by:
 0092     options.rxnDir(ismember(map.connectionAbb,model.rxns((maxFlux&lt;=0) &amp; (minFlux&lt;0)))) = -1;
 0093 <span class="keyword">end</span>
 0094 
-0095 options = <a href="setMapOptions.html" class="code" title="function options = setMapOptions(options,varargin)">setMapOptions</a>(options,map,model,<span class="string">'edgeColor'</span>,color);
+0095 options = <a href="setMapOptions.html" class="code" title="function options = setMapOptions(options, map, varargin)">setMapOptions</a>(options,map,model,<span class="string">'edgeColor'</span>,color);
 0096 <a href="drawCbMap.html" class="code" title="function options = drawCbMap(map,options,varargin)">drawCbMap</a>(map,options);</pre></div>
-<hr><address>Generated on Sun 26-Dec-2010 12:06:07 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>
