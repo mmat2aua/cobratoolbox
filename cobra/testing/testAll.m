@@ -74,9 +74,10 @@ end
 
 x = [num2str(tests_passed), ' of ', num2str(tests_completed), ' tests completed successfully.'];
 if(tests_passed ~= tests_completed)
+    display('IT IS NOT NECESSARY FOR THE COBRA TOOLBOX TO PASS ALL TESTS TO FUNCTION; HOWEVER, IT MUST PASS THE TESTS THAT ARE RELEVANT TO YOUR PARTICULAR PROBLEM!!!');
     display('Tests may not pass for several reasons.  Some of the most common issues:');
     display('1.  The correct solver is not installed.  Certain tests require LP, MILP, QP or NLP solvers.  See changeCobraSolvers.m for a complete list of supported solvers.');
-    display('These tests will fail when running testAll unless one has the tomlab suite installed.  If all of the functions that you require for your use function then don't worry about them: testC13Fitting, testGDLS, testMOMA, testOptKnock, testSolvers');
+    display('These tests will fail when running testAll unless one has the tomlab suite installed.  If all of the functions that you require for your use function then do not worry about them: testC13Fitting, testGDLS, testMOMA, testOptKnock, testSolvers');
     %Removed because this line confuses people into believing there is a problem
     %display('2.  The SBMLtoolbox and libSBML libraries are not installed correctly.  This will affect reading/writing of models.');
     display('If a particular test fails, you can run that test individually for more information');

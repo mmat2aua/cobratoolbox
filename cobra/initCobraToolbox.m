@@ -34,7 +34,9 @@ CobraLPSolver = 'tomlab_cplex';
 % CobraLPSolver = 'glpk';
  %CobraLPSolver = 'mosek';
 % CobraLPSolver = 'cplx';
-
+if isunix
+  addpath('/usr/local/lib/');
+end
 CobraLPSolvers = { 'gurobi', 'tomlab_cplex', 'glpk', 'mosek', 'cplx' };
 for CobraLPSolver = CobraLPSolvers
     LPsolverOK = changeCobraSolver(char(CobraLPSolver));
