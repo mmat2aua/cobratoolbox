@@ -21,8 +21,9 @@ function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,pro
 %                       (Default = 1)
 %   exRxnRemove         Names of exchange reactions to remove
 %                       (Default = [])
-%   solver              Use either 'GIMME' or 'Shlomi' to create tissue
-%                       specific model
+%   solver              Use either 'GIMME', 'iMAT', or 'Shlomi' to create tissue
+%                       specific model. 'Shlomi' is the same as 'iMAT' the names
+%                       are just maintained for historical purposes.
 %                       (Default = 'GIMME')
 %   options             If using GIMME, enter objectiveCol here
 %                       Default: objective function with 90% flux cutoff,
@@ -32,7 +33,7 @@ function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,pro
 %                       step (Default = 0)
 %
 %OUTPUTS
-%   tissueModel         Model produced by GIMME or Shlomi, containing only
+%   tissueModel         Model produced by GIMME or iMAT, containing only
 %                       reactions carrying flux
 %   Rxns                Statistics of test
 %                               ExpressedRxns - predicted by mRNA data
@@ -142,7 +143,9 @@ nRxns = length(model.lb);
 % Determine reaction indices of expressed and unexpressed reactions
 RHindex = findRxnIDs(model,ExpressedRxns);
 RLindex = findRxnIDs(model,UnExpressedRxns);
-
+if (strcmp(solver, 'iMAT'))
+  solver = 'Shlomi';
+end
 switch solver
     case 'Shlomi'
         
