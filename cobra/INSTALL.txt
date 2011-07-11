@@ -1,9 +1,6 @@
-For convenience, we provide libSBML, the SBMLToolbox, and glpk_mex in external/toolboxes for Mac OS X 10.6 (64-bit), GNU/Linux Ubuntu 10.0 (64-bit), and Microsoft Windows 7 (64-bit).  If you do not wish to use these items please delete the directories.  If you require these external libraries for other architectures please ask google or visit their respective websites.
+For convenience, we provide the SBMLToolbox 3.1.2, and glpk_mex in external/toolboxes for Mac OS X 10.6 (64-bit), GNU/Linux Ubuntu 10.0 (64-bit), and Microsoft Windows 7 (64-bit).  If you do not wish to use these items please delete the directories.  If you require these external libraries for other architectures please ask google or visit their respective websites.
 
-Cobra_Install_Path is the path to the top level directory for the COBRA Toolbox
-Update Shared Library Path — Mac OS X and GNU/Linux Only
-    -Mac OS: DYLD_LIBRARY_PATH=Cobra_Install_Path/external/toolboxes/SBMLToolbox_3.1.2/toolbox/
-    -GNU/Linux: LD_LIBRARY_PATH=Cobra_Install_Path/external/toolboxes/SBMLToolbox_3.1.2/toolbox/
+To read / write SBML files you must install libSBML 5.0 or greater from here: http://sourceforge.net/projects/sbml/files/libsbml/
 
 From MATLAB, run
   initCobraToolbox
