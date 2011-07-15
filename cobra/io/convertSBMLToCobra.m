@@ -43,25 +43,23 @@ metFormulas = {};
 haveFormulasFlag = false;
 tmpSpecies = [];
 for i = 1:nMetsTmp
-    % Ignore exchange species
-    if (isempty(regexp(modelSBML.species(i).id,'_b$','ONCE')));
+    % Ignore boundary metabolites
+    if (~modelSBML.species(i).boundaryCondition)
+      %Check for the Palsson lab _b$ boundary condition indicator
+      if (isempty(regexp(modelSBML.species(i).id,'_b$')));
         tmpSpecies = [ tmpSpecies  modelSBML.species(i)];
         speciesList{end+1} = modelSBML.species(i).id;
-        if isfield(modelSBML.species(i),'charge')
-            tmpCharge = double(modelSBML.species(i).charge);
-        else
-            tmpCharge = 0;
-        end
         notesField = modelSBML.species(i).notes;
         % Get formula if in notes field
         if (~isempty(notesField))
-            [tmp,tmp,tmp,tmp,formula,tmp,tmp,tmp,tmp,charge] = parseSBMLNotesField(notesField);
-            tmpCharge = charge;
-            metFormulas {end+1} = formula;
-            formulaCount = formulaCount + 1;
-            haveFormulasFlag = true;
+          [tmp,tmp,tmp,tmp,formula,tmp,tmp,tmp,tmp,charge] = parseSBMLNotesField(notesField);
+          tmpCharge = charge;
+          metFormulas {end+1} = formula;
+          formulaCount = formulaCount + 1;
+          haveFormulasFlag = true;
         end
-        chargeList= [chargeList tmpCharge];
+        chargeList= [chargeList modelSBML.species(i).charge];
+      end
     end
 end
 
@@ -153,7 +151,7 @@ for i = 1:nRxns
     end
 end
 %close the waitbar if this is matlab
-if ( regexp( version, 'R20') )
+if (regexp(version, 'R20'))
     close(h);
 end
 allGenes = unique(allGenes);
@@ -175,13 +173,12 @@ if (hasNotesField)
         
         rxnGeneMat(i,geneInd) = 1;
         for j = 1:length(geneInd)
-            %rules{i} = strrep(rules{i},['x(' num2str(j) ')'],['x(' num2str(geneInd(j)) ')']);
             rules{i} = strrep(rules{i},['x(' num2str(j) ')'],['x(' num2str(geneInd(j)) '_TMP_)']);
         end
         rules{i} = strrep(rules{i},'_TMP_','');
     end
     %close the waitbar if this is matlab
-    if ( regexp( version, 'R20') )
+    if (regexp(version, 'R20'))
         close(h);
     end
     
@@ -223,8 +220,6 @@ for i = 1:nMets
     if ~isempty(tmpCell)
         compID = tmpCell{1};
         metTmp = [regexprep(metID,['_' compID{1} '$'],'') '[' compID{1} ']'];
-%         metTmp = regexprep(metTmp,'_+','-');
-%         metTmp = regexprep(metTmp,'-DASH-','-');%%%
     else
         metTmp = metID;
     end

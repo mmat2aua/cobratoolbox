@@ -34,7 +34,21 @@ end
 if (isfield(model,'metFormulas'))
     model.metFormulas = model.metFormulas(selMets);
 end
-
+if (isfield(model,'metCharge'))
+    model.metCharge = model.metCharge(selMets);
+end
+if (isfield(model,'metChEBIID'))
+    model.metChEBIID = model.metChEBIID(selMets);
+end
+if (isfield(model,'metKEGGID'))
+    model.metKEGGID = model.metKEGGID(selMets);
+end
+if (isfield(model,'metPubChemID'))
+    model.metPubChemID = model.metPubChemID(selMets);
+end
+if (isfield(model,'metInChIString'))
+    model.metInChIString = model.metInChIString(selMets);
+end
 
 if removeRxnFlag
     %if S is empty..

@@ -128,18 +128,14 @@ for ( i=1:size( model.mets, 1 ) )
     if isfield( model, 'metFormulas' )
         tmp_notes = [tmp_notes '<p>FORMULA: ' model.metFormulas{i} '</p>'];
     end
-    if isfield( model, 'charges' )
-        %NOTE: charge is being removed in SBML level 3
-%         tmp_species.charge = model.charges(i);
-%         tmp_species.isSetCharge = 1;
-        tmp_notes = [tmp_notes '<p>CHARGE: ' num2str(model.charges(i)) '</p>'];
-    end
     if isfield( model, 'metCharge' )
         %NOTE: charge is being removed in SBML level 3
 %         tmp_species.charge = model.metCharge(i);
 %         tmp_species.isSetCharge = 1;
         tmp_notes = [tmp_notes '<p>CHARGE: ' num2str(model.metCharge(i)) '</p>'];
     end
+
+
     if ~isempty(tmp_notes)
         tmp_species.notes = ['<body xmlns="http://www.w3.org/1999/xhtml">' tmp_notes '</body>'];
     end

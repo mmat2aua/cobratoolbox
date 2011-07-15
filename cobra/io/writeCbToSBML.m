@@ -7,5 +7,5 @@ function writeCbToSBML(model,fileName)
 % model         COBRA model structure
 % fileName      Name of xml file output
 %
-        sbmlModel = cobra_struct_to_sbml_struct(model);
+        sbmlModel = convertCobraToSBML(model);
         OutputSBML(sbmlModel, fileName);
