@@ -21,7 +21,7 @@ output = scoreC13Fit(v0,expdata,model);
 initial_score = output.error;
 
 
-display('the fluxomics toolbox requires a Non Linear Programming (NLP) solver.  Currently the only supported solver is Tomlab/CPLEX.  This test will not complete if this solver is not installed');
+display('the fluxomics toolbox requires a Non Linear Programming (NLP) solver.  Currently the only supported solver is Tomlab/SNOPT.  This test will not complete if this solver is not installed');
 % matlabpool local 3 % starts 3 local workers.  This task can be
 % parallelized.  See Parallel toolbox for description
 [vout, rout] = fitC13Data(v0,expdata,model, majorIterationLimit);

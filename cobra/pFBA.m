@@ -71,6 +71,8 @@ if ~exist('skipclass','var'), skipclass = 0;                end
 
 if skipclass % skip the model reduction and gene/rxn classification
     % minimize the network flux
+FBAsoln = optimizeCbModel(model);
+model.lb(model.c==1) = FBAsoln.f;
 [ MinimizedFlux modelIrrevFM]= minimizeModelFlux_local(model,GeneOption);
 modelIrrevFM = changeRxnBounds(modelIrrevFM,'netFlux',MinimizedFlux.f,'b');
 GeneClasses = [];
@@ -84,7 +86,7 @@ model_sav = model;
 [selExc,selUpt] = findExcRxns(model,0,0); % find and open up all exchanges
 tempmodel = changeRxnBounds(model,model.rxns(selExc),-1000,'l');
 tempmodel = changeRxnBounds(tempmodel,model.rxns(selExc),1000,'u');
-tempmodel = reduceModel(tempmodel); % reduce the model to find blocked reactions
+tempmodel = reduceModel(tempmodel,tol); % reduce the model to find blocked reactions
 Blocked_Rxns = setdiff(model.rxns,regexprep(tempmodel.rxns,'_r$',''));
 model = removeRxns(model,setdiff(model.rxns,regexprep(tempmodel.rxns,'_r$',''))); % remove blocked reactions
 Ind2Remove = find(~and(sum(full(model.rxnGeneMat),1),1));
@@ -105,7 +107,7 @@ end
     
 
 % remove zero flux rxns
-tempmodel = reduceModel(model);
+tempmodel = reduceModel(model,tol);
 ZeroFluxRxns = setdiff(model.rxns,regexprep(tempmodel.rxns,'_r$',''));
 model = removeRxns(model,ZeroFluxRxns);
 
