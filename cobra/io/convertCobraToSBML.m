@@ -1,4 +1,4 @@
-function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList)
+function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList,debug_function)
 %convertCobraToSBML converts a cobra structure to an sbml
 %structure using the structures provided in the SBML toolbox 3.1.0
 %
@@ -9,7 +9,7 @@ function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolLi
 %
 %OPTIONAL INPUTS
 % sbmlLevel         SBML Level (default = 2)
-% sbmlVersion       SBML Version (default = 4)
+% sbmlVersion       SBML Version (default = 1)
 % compSymbolList    List of compartment symbols
 % compNameList      List of copmartment names correspoding to compSymbolList
 %
@@ -37,55 +37,36 @@ function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolLi
 %
 %POTENTIAL FUTURE BUG: To speed things up, sbml structs have been
 %recycled and are directly appended into lists instead of using _addItem
-
-%A flag to know if the user is using the older version of the sbml toolbox.
-sbmlToolboxV3Flag = true;
-if (size(strfind( help('Model_create'), 'sbmlVersion' ))==0)
-    sbmlToolboxV3Flag = false;
+if (~exist('sbmlLevel','var') || isempty(sbmlLevel))
     sbmlLevel = 2;
 end
-
-if ( ~exist('sbmlLevel','var') || isempty(sbmlLevel) )
-    sbmlLevel = 2;
+if (~exist('sbmlVersion','var') || isempty(sbmlVersion))
+    sbmlVersion = 1;
 end
-if ( ~exist('sbmlVersion','var') || isempty(sbmlVersion) )
-    sbmlVersion = 4;
+if (~exist('debug_function','var') || isempty(debug_function))
+  debug_function = 0;
 end
 reaction_units = 'mmol_per_gDW_per_hr';
-if sbmlToolboxV3Flag
-    sbmlModel = Model_create( sbmlLevel, sbmlVersion );
-else
-    sbmlModel = Model_create( sbmlLevel );
-end
+sbmlModel = Model_create(sbmlLevel, sbmlVersion);
+
 sbmlModel.namespaces = struct();
 sbmlModel.namespaces.prefix = '';
 sbmlModel.namespaces.uri = 'http://www.sbml.org/sbml/level2';
 if isfield(model,'description')
-    sbmlModel.id = strrep( strrep( strrep(model.description,'.','_'), filesep, '_' ), ':','_' );
+    sbmlModel.id = strrep(strrep(strrep(model.description,'.','_'), filesep, '_'), ':','_');
 else
     sbmlModel.id = '';
 end
 %POTENTIAL FUTURE BUG: Create temporary structs to speed things up.
+tmp_unit = Unit_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+tmp_species = Species_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+sbml_tmp_compartment = Compartment_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+sbml_tmp_parameter = Parameter_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+sbml_tmp_species_ref = SpeciesReference_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+sbml_tmp_reaction = Reaction_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+sbml_tmp_law = KineticLaw_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
+tmp_unit_definition = UnitDefinition_create(sbmlModel.SBML_level, sbmlModel.SBML_version);
 
-if sbmlToolboxV3Flag
-    tmp_unit = Unit_create(  sbmlModel.SBML_level, sbmlModel.SBML_version );
-    tmp_species = Species_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    sbml_tmp_compartment = Compartment_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    sbml_tmp_parameter = Parameter_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    sbml_tmp_species_ref = SpeciesReference_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    sbml_tmp_reaction = Reaction_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    sbml_tmp_law = KineticLaw_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-    tmp_unit_definition = UnitDefinition_create( sbmlModel.SBML_level, sbmlModel.SBML_version );
-else
-    tmp_unit = Unit_create(  sbmlModel.SBML_level);
-    tmp_species = Species_create( sbmlModel.SBML_level);
-    sbml_tmp_compartment = Compartment_create( sbmlModel.SBML_level);
-    sbml_tmp_parameter = Parameter_create( sbmlModel.SBML_level);
-    sbml_tmp_species_ref = SpeciesReference_create( sbmlModel.SBML_level);
-    sbml_tmp_reaction = Reaction_create( sbmlModel.SBML_level);
-    sbml_tmp_law = KineticLaw_create( sbmlModel.SBML_level);
-    tmp_unit_definition = UnitDefinition_create( sbmlModel.SBML_level);
-end
 %% Compartments
 if ~exist('compSymbolList','var') || isempty(compSymbolList)
     compSymbolList = {'c','m','v','x','e','t','g','r','n','p','l'};
@@ -100,35 +81,40 @@ unit_exponents = [1 -1 -1];
 unit_scales = [-3 0 0];
 unit_multipliers = [1 1 1.0/60/60];
 %Add the units to the unit definition
-for i = 1:size( unit_kinds, 2 )
+for i = 1:size(unit_kinds, 2)
     tmp_unit.kind = unit_kinds{ i };
-    tmp_unit.exponent = unit_exponents( i );
-    tmp_unit.scale = unit_scales( i );
-    tmp_unit.multiplier = unit_multipliers( i );
-    tmp_unit_definition = UnitDefinition_addUnit( tmp_unit_definition, tmp_unit );
+    tmp_unit.exponent = unit_exponents(i);
+    tmp_unit.scale = unit_scales(i);
+    tmp_unit.multiplier = unit_multipliers(i);
+    tmp_unit_definition = UnitDefinition_addUnit(tmp_unit_definition, tmp_unit);
 end
-sbmlModel = Model_addUnitDefinition( sbmlModel, tmp_unit_definition );
+if debug_function
+  if ~isSBML_Unit(tmp_unit_definition)
+    error('unit definition failed')
+  end
+end
+sbmlModel = Model_addUnitDefinition(sbmlModel, tmp_unit_definition);
 
 
 %List to hold the compartment ids.
 the_compartments = {};
 %separate metabolite and compartment
 [tokens tmp_met_struct] = regexp(model.mets,'(?<met>.+)\[(?<comp>.+)\]|(?<met>.+)\((?<comp>.+)\)','tokens','names');
-for ( i=1:size( model.mets, 1 ) )
+for (i=1:size(model.mets, 1))
     tmp_notes='';
     tmp_met = tmp_met_struct{i}.met;
     %Change id to correspond to SBML id specifications
-    tmp_met = strcat( 'M_', (tmp_met), '_', tmp_met_struct{i}.comp);
+    tmp_met = strcat('M_', (tmp_met), '_', tmp_met_struct{i}.comp);
     model.mets{ i } = formatForSBMLID(tmp_met);
     tmp_species.id = formatForSBMLID(tmp_met);
     tmp_species.compartment = formatForSBMLID(tmp_met_struct{i}.comp);
-    if isfield( model, 'metNames' )
+    if isfield(model, 'metNames')
         tmp_species.name = (model.metNames{i});
     end
-    if isfield( model, 'metFormulas' )
+    if isfield(model, 'metFormulas')
         tmp_notes = [tmp_notes '<p>FORMULA: ' model.metFormulas{i} '</p>'];
     end
-    if isfield( model, 'metCharge' )
+    if isfield(model, 'metCharge')
         %NOTE: charge is being removed in SBML level 3
 %         tmp_species.charge = model.metCharge(i);
 %         tmp_species.isSetCharge = 1;
@@ -143,9 +129,15 @@ for ( i=1:size( model.mets, 1 ) )
     %This is where the compartment symbols are aggregated.
     the_compartments{ i } = tmp_species.compartment ;
 end
-
+if debug_function
+  for (i = 1:size(sbmlModel.species, 2))
+    if ~isSBML_Species(sbmlModel.species(i), sbmlLevel, sbmlVersion)
+      error('SBML species failed to pass test')
+    end
+  end
+end
 %Add the unique compartments to the model struct.
-the_compartments = unique( the_compartments );
+the_compartments = unique(the_compartments);
 for (i=1:size(the_compartments,2))
     tmp_id = the_compartments{1,i};
     tmp_symbol_index = find(strcmp(formatForSBMLID(compSymbolList),tmp_id));
@@ -158,73 +150,79 @@ for (i=1:size(the_compartments,2))
     tmp_id = formatForSBMLID(tmp_id);
     sbml_tmp_compartment.id = tmp_id;
     sbml_tmp_compartment.name = tmp_name;
-    sbmlModel = Model_addCompartment( sbmlModel, sbml_tmp_compartment );
+    sbmlModel = Model_addCompartment(sbmlModel, sbml_tmp_compartment);
 end
-
+if debug_function
+  for (i = 1:size(sbmlModel.compartment, 2))
+    if ~isSBML_Compartment(sbmlModel.compartment(i), sbmlLevel, sbmlVersion)
+      error('SBML compartment failed to pass test')
+    end
+  end
+end
 %Add the reactions to the model struct.  Use the species references.
 sbml_tmp_parameter.units = reaction_units;
 sbml_tmp_parameter.isSetValue = 1;
-for (i=1:size( model.rxns, 1 ) )
-    tmp_id =  strcat( 'R_', formatForSBMLID(model.rxns{i}));
+for (i=1:size(model.rxns, 1))
+    tmp_id =  strcat('R_', formatForSBMLID(model.rxns{i}));
     model.rxns{i} = tmp_id;
-    met_idx = find( model.S(:, i ) );
+    met_idx = find(model.S(:, i));
     sbml_tmp_reaction.notes = '';
     %Reset the fields that have been filled.
     sbml_tmp_reaction.reactant = [];
     sbml_tmp_reaction.product = [];
     sbml_tmp_reaction.kineticLaw = [];
     sbml_tmp_reaction.id = tmp_id;
-    if isfield( model, 'rxnNames' )
+    if isfield(model, 'rxnNames')
         sbml_tmp_reaction.name = model.rxnNames{i};
     end
-    if isfield( model, 'rev' )
+    if isfield(model, 'rev')
         sbml_tmp_reaction.reversible = model.rev(i);
     end
     sbml_tmp_law.parameter = [];
     sbml_tmp_law.formula = 'FLUX_VALUE';
     sbml_tmp_parameter.id = 'LOWER_BOUND';
-    sbml_tmp_parameter.value = model.lb( i );
+    sbml_tmp_parameter.value = model.lb(i);
     sbml_tmp_law.parameter = [ sbml_tmp_law.parameter sbml_tmp_parameter ];
     sbml_tmp_parameter.id = 'UPPER_BOUND';
-    sbml_tmp_parameter.value = model.ub( i );
+    sbml_tmp_parameter.value = model.ub(i);
     sbml_tmp_law.parameter = [ sbml_tmp_law.parameter sbml_tmp_parameter ];
     sbml_tmp_parameter.id = 'FLUX_VALUE';
     sbml_tmp_parameter.value = 0;
     sbml_tmp_law.parameter = [ sbml_tmp_law.parameter sbml_tmp_parameter ];
     sbml_tmp_parameter.id = 'OBJECTIVE_COEFFICIENT';
-    sbml_tmp_parameter.value = model.c( i );
+    sbml_tmp_parameter.value = model.c(i);
     sbml_tmp_law.parameter = [ sbml_tmp_law.parameter sbml_tmp_parameter ];
     sbml_tmp_reaction.kineticLaw = sbml_tmp_law;
     %Add in other notes
     tmp_note = '';
-    if isfield( model, 'grRules' )
+    if isfield(model, 'grRules')
         tmp_note = [tmp_note '<p>GENE_ASSOCIATION: ' model.grRules{i} '</p>' ];
     end
-    if isfield( model, 'subSystems' )
+    if isfield(model, 'subSystems')
         tmp_note = [ tmp_note ' <p>SUBSYSTEM: ' model.subSystems{i} '</p>'];
     end
-    if isfield( model, 'rxnECNumbers' )
+    if isfield(model, 'rxnECNumbers')
         tmp_note = [ tmp_note ' <p>EC Number: ' model.rxnECNumbers{i} '</p>'];
     end
-    if isfield( model, 'confidenceScores')
+    if isfield(model, 'confidenceScores')
         tmp_note = [ tmp_note ' <p>Confidence Level: ' model.confidenceScores{i} '</p>'];
     end
-    if isfield( model, 'rxnReferences' )
+    if isfield(model, 'rxnReferences')
         tmp_note = [ tmp_note ' <p>AUTHORS: ' model.rxnReferences{i} '</p>'];
     end
-    if isfield( model, 'rxnNotes')
+    if isfield(model, 'rxnNotes')
         tmp_note = [ tmp_note ' <p>' model.rxnNotes{i} '</p>'];
     end
     if ~isempty(tmp_note)
         sbml_tmp_reaction.notes = ['<body xmlns="http://www.w3.org/1999/xhtml">' tmp_note '</body>'];
     end
     %Add in the reactants and products
-    for (j_met=1:size(met_idx,1)    )
+    for (j_met=1:size(met_idx,1))
         tmp_idx = met_idx(j_met,1);
         sbml_tmp_species_ref.species = model.mets{tmp_idx};
-        met_stoich = model.S( tmp_idx, i );
-        sbml_tmp_species_ref.stoichiometry = abs( met_stoich );
-        if ( met_stoich > 0 )
+        met_stoich = model.S(tmp_idx, i);
+        sbml_tmp_species_ref.stoichiometry = abs(met_stoich);
+        if (met_stoich > 0)
             sbml_tmp_reaction.product = [ sbml_tmp_reaction.product sbml_tmp_species_ref ];
         else
             sbml_tmp_reaction.reactant = [ sbml_tmp_reaction.reactant sbml_tmp_species_ref];
@@ -232,7 +230,13 @@ for (i=1:size( model.rxns, 1 ) )
     end
     sbmlModel.reaction = [ sbmlModel.reaction sbml_tmp_reaction ];
 end
-
+if debug_function
+  for (i = 1:size(sbmlModel.reaction, 2))
+    if ~isSBML_Reaction(sbmlModel.reaction(i), sbmlLevel, sbmlVersion)
+      error('SBML reaction failed to pass test')
+    end
+  end
+end
 %% Format For SBML
 function str = formatForSBMLID(str)
 str = strrep(str,'-','_DASH_');
