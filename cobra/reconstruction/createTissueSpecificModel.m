@@ -426,7 +426,6 @@ for i = 1:size(parsedGPR,1)
     end
     
     test = 0;
-    cnt2 = 0;
     for j = 1:cnt
         loc = str2num(parsedGPR{i,j});
         loc = floor(loc);
@@ -436,14 +435,14 @@ for i = 1:size(parsedGPR,1)
             test = 1;
             break
         elseif length(x) == 0
-            unknown = [unknown;corrRxn(i)];
-            test = 1;
-            break
+          test = 2;
         end
     end
     
     if test == 0
         rxnExpressed = [rxnExpressed;corrRxn(i)];  
+    elseif test == 2
+      unknown = [unknown;corrRxn(i)];
     end
 end
 
