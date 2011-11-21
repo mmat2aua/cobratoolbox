@@ -1,7 +1,9 @@
-function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,proceedExp,orphan,exRxnRemove,solver,options,funcModel)
+function [tissueModel,Rxns] = createTissueSpecificModel(model, ...
+                                                  expressionData,proceedExp,orphan,exRxnRemove,solver,options,funcModel)
 %createTissueSpecificModel Create draft tissue specific model from mRNA expression data
 %
-% [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,proceedExp,orphan,exRxnRemove,solver,options,funcModel)
+% [tissueModel,Rxns] =
+% createTissueSpecificModel(model,expressionData,proceedExp,orphan,exRxnRemove,solver,options,funcModel)
 %
 %INPUTS
 %   model               global recon1 model
@@ -32,6 +34,7 @@ function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,pro
 %                       that can carry a flux (using FVA), 0 - skip this
 %                       step (Default = 0)
 %
+%
 %OUTPUTS
 %   tissueModel         Model produced by GIMME or iMAT, containing only
 %                       reactions carrying flux
@@ -57,6 +60,14 @@ function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,pro
 % Final Corba 2.0 Version, AB 08/05/10
 
 % Define defaults
+% Deal with hardcoded belief that all the genes will have human entrez
+% ids and the user wants to collapse alternative constructs
+if iscell(expressionData.Locus(1))
+  match_strings = true;
+else
+  match_strings = false;
+end
+
 if ~exist('proceedExp','var') || isempty(proceedExp)
     proceedExp = 1;
 end
@@ -130,7 +141,7 @@ else
 end
 
 % Mapping probes to reactions in model
-[ExpressedRxns,UnExpressedRxns,unknown] = mapProbes(parsedGPR,corrRxn,locus,genePresence);
+[ExpressedRxns,UnExpressedRxns,unknown] = mapProbes(parsedGPR,corrRxn,locus,genePresence,match_strings);
 
 % Removing exchange reactions that are not in this specific tissue
 % metabolome
@@ -271,7 +282,6 @@ switch solver
         for i = 1:length(RHindex)
             expressionCol(RHindex(i)) = 2;
         end
-        
         if ~exist('options','var') || isempty(options)
             loc = find(model.c);
             
@@ -279,7 +289,6 @@ switch solver
             
             options = [loc 0.9];
         end
-        
         cutoff = 1;
         [reactionActivity,reactionActivityIrrev,model2gimme,gimmeSolution] = solveGimme(model,options,expressionCol,cutoff);
         
@@ -411,7 +420,10 @@ for i=1:nRxns
     end
 end
 
-function [rxnExpressed,unExpressed,unknown] = mapProbes(parsedGPR,corrRxn,locus,genePresence)
+function [rxnExpressed,unExpressed,unknown] = mapProbes(parsedGPR,corrRxn,locus,genePresence,match_strings)
+if ~exist('match_strings', 'var') || isempty(match_strings)
+  match_strings = false;
+end
 
 rxnExpressed = [];
 unExpressed = [];
@@ -427,9 +439,15 @@ for i = 1:size(parsedGPR,1)
     
     test = 0;
     for j = 1:cnt
+      if match_strings
+        loc = parsedGPR{i,j};
+        x = strmatch(loc, locus, 'exact');
+      else
         loc = str2num(parsedGPR{i,j});
         loc = floor(loc);
         x = find(locus == loc);
+      end
+
         if length(x) > 0 & genePresence(x) == 0
             unExpressed = [unExpressed;corrRxn(i)];
             test = 1;
