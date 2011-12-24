@@ -49,6 +49,7 @@ function model = xls2model(fileName,biomassRxnEquation)
 %                           PubChemIDs, and ChEBIIDs, are properly passed as cell arrays. 
 % Ronan Fleming 08/17/10    Support for unix
 %
+warning('xls2model IS NOT SUPPORTED BY THE openCOBRA CORE TEAM AND WILL BE MOVED FROM THE CORE IN THE NEAR FUTURE');
 warning off
 
 if isunix
