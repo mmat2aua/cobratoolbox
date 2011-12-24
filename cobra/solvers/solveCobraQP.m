@@ -293,6 +293,70 @@ switch solver
         end
         origStat=inform;
     %%
+    case 'gurobi'
+        % Free academic licenses for the Gurobi solver can be obtained from
+        % http://www.gurobi.com/html/academic.html
+        %
+        % The code below uses Gurobi Mex to interface with Gurobi. It can be downloaded from
+        % http://www.convexoptimization.com/wikimization/index.php/Gurobi_Mex:_A_MATLAB_interface_for_Gurobi
+
+        clear opts            % Use the default parameter settings
+        if printLevel == 0
+           % Version v1.10 of Gurobi Mex has a minor bug. For complete silence
+           % Remove Line 736 of gurobi_mex.c: mexPrintf("\n"); 
+           opts.Display = 0;
+           opts.DisplayInterval = 0;
+        else
+           opts.Display = 1;
+        end
+
+        
+        
+        if (isempty(csense))
+            clear csense
+            csense(1:length(b),1) = '=';
+        else
+            csense(csense == 'L') = '<';
+            csense(csense == 'G') = '>';
+            csense(csense == 'E') = '=';
+            csense = csense(:);
+        end
+        
+        % Gurobi passes individual terms instead of an F matrix. qrow and 
+        % qcol specify which variables are multipled to get each term,
+        % while qval specifies the coefficients of each term.
+
+        [qrow,qcol,qval]=find(F);
+        qrow=qrow'-1;   % -1 because gurobi numbers indices from zero, not one.
+        qcol=qcol'-1;
+        qval=0.5*qval';
+        
+        opts.QP.qrow = int32(qrow); 
+        opts.QP.qcol = int32(qcol); 
+        opts.QP.qval = qval;
+        opts.Method = 0;    % 0 - primal, 1 - dual
+        opts.Presolve = -1; % -1 - auto, 0 - no, 1 - conserv, 2 - aggressive
+        opts.FeasibilityTol = 1e-6;
+        opts.IntFeasTol = 1e-5;
+        opts.OptimalityTol = 1e-6;
+        %opt.Quad=1;
+        
+        %gurobi_mex doesn't cast logicals to doubles automatically
+    	c = double(c);
+        [x,f,origStat,output,y] = gurobi_mex(c,osense,sparse(A),b, ...
+                                             csense,lb,ub,[],opts);
+        if origStat==2
+           stat = 1; % Optimal solutuion found
+        elseif origStat==3
+           stat = 0; % Infeasible
+        elseif origStat==5
+           stat = 2; % Unbounded
+        elseif origStat==4
+           stat = 0; % Gurobi reports infeasible *or* unbounded
+        else
+           stat = -1; % Solution not optimal or solver problem
+        end
+    %%
     otherwise
         error(['Unknown solver: ' solver]);
 end

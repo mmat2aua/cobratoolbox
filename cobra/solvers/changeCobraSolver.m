@@ -205,6 +205,13 @@ elseif (strcmp(solverType,'QP'))
             else
                 solverOK = true;
             end
+        case 'gurobi'
+            if (~exist('gurobi_mex'))
+                warning('QP solver Gurobi not useable: gurobi_mex not in Matlab path');
+                solverOK=false;
+            else
+                solverOK=true;
+            end
         otherwise
             warning(['QP solver ' solverName ' not supported by COBRA Toolbox']);
             solverOK = false;
@@ -222,6 +229,14 @@ elseif (strcmp(solverType, 'MIQP'))
             else
                 solverOK = true;
             end
+        case 'gurobi'
+            if(~exist('gurobi_mex'))
+                warning('MIQP solver gurobi not usable: gurobi_mex not in Matlab path');
+                solverOK = false;
+            else
+                solverOK = true;
+            end
+            
         otherwise
             warning(['MIQP solver ' solverName ' not supported by COBRA Toolbox']);
             solverOK = false;

@@ -51,7 +51,7 @@ end
 % Define default MILP solver
 %CobraMILPSolver = 'tomlab_cplex';
 %CobraMILPSolver = 'glpk';
-for CobraMILPSolver = { 'gurobi', 'tomlab_cplex' 'glpk' }
+for CobraMILPSolver = { 'gurobi', 'tomlab_cplex', 'glpk' }
     MILPsolverOK = changeCobraSolver(char(CobraMILPSolver),'MILP');
     if MILPsolverOK
         fprintf('MILP solver set to %s successful\n',char(CobraMILPSolver));
@@ -63,7 +63,7 @@ if ~MILPsolverOK
 end
 % Define default QP solver
 %CobraQPSolver = 'tomlab_cplex';
-for CobraQPSolver = { 'tomlab_cplex' 'qpng' }
+for CobraQPSolver = {'gurobi', 'tomlab_cplex', 'qpng' }
     QPsolverOK = changeCobraSolver(char(CobraQPSolver),'QP');
     if QPsolverOK
         fprintf('QP solver set to %s successful\n',char(CobraQPSolver));
@@ -74,13 +74,17 @@ if ~QPsolverOK
     fprintf('QP solver set failed\n');
 end
 % Define default MIQP solver
-CobraMIQPSolver = 'tomlab_cplex';
-MIQPsolverOK = changeCobraSolver(CobraMIQPSolver,'MIQP');
-if MIQPsolverOK
-    fprintf('MIQP solver set to %s successful\n',CobraMIQPSolver);
-else
+for CobraMIQPSolver = {'gurobi' 'tomlab_cplex'}
+    MIQPsolverOK = changeCobraSolver(char(CobraMIQPSolver),'MIQP');
+    if MIQPsolverOK
+        fprintf('MIQP solver set to %s successful\n',char(CobraMIQPSolver));
+        break;
+    end
+end
+if ~MIQPsolverOK
     fprintf('MIQP solver set failed\n');
 end
+
 
 % Define default CB map output
 % CbMapOutput = 'matlab';
@@ -88,7 +92,7 @@ CbMapOutput = 'svg';
 CbMapOutputOK = changeCbMapOutput(CbMapOutput);
 if CbMapOutputOK
     fprintf('CB map output set to %s successful\n',CbMapOutput);
-else
+else	
     fprintf('Cb map output set failed\n');
 end
 
