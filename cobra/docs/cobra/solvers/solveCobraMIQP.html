@@ -77,7 +77,8 @@ OUTPUT
   time             Solve time in seconds
 
 
- Markus Herrgard 6/8/07</pre></div>
+ Markus Herrgard 6/8/07
+ Tim Harrington  05/18/12 Added support for the Gurobi 5.0 solver</pre></div>
 
 <!-- crossreference -->
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
@@ -147,105 +148,231 @@ This function is called by:
 0054 <span class="comment">%</span>
 0055 <span class="comment">%</span>
 0056 <span class="comment">% Markus Herrgard 6/8/07</span>
-0057 
-0058 <span class="keyword">global</span> CBT_MIQP_SOLVER;
-0059 solver = CBT_MIQP_SOLVER;
-0060 
-0061 <span class="comment">%optional parameters</span>
-0062 optParamNames = {<span class="string">'printLevel'</span>, <span class="string">'saveInput'</span>, <span class="string">'timeLimit'</span>};
-0063 parameters = <span class="string">''</span>;
-0064 <span class="keyword">if</span> nargin ~=1
-0065     <span class="keyword">if</span> mod(length(varargin),2)==0
-0066         <span class="keyword">for</span> i=1:2:length(varargin)-1
-0067             <span class="keyword">if</span> ismember(varargin{i},optParamNames)
-0068                 parameters.(varargin{i}) = varargin{i+1};
-0069             <span class="keyword">else</span>
-0070                 error([varargin{i} <span class="string">' is not a valid optional parameter'</span>]);
-0071             <span class="keyword">end</span>
-0072         <span class="keyword">end</span>
-0073     <span class="keyword">elseif</span> strcmp(varargin{1},<span class="string">'default'</span>)
-0074         parameters = <span class="string">'default'</span>;
-0075     <span class="keyword">elseif</span> isstruct(varargin{1})
-0076         parameters = varargin{1};
-0077     <span class="keyword">else</span>
-0078         display(<span class="string">'Warning: Invalid number of parameters/values'</span>)
-0079         solution=[];
-0080         <span class="keyword">return</span>;
-0081     <span class="keyword">end</span>
-0082 <span class="keyword">end</span>
-0083 [printLevel, saveInput, timeLimit] = <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'QP'</span>,optParamNames,parameters);
-0084 
-0085 [A,b,F,c,lb,ub,csense,osense, vartype] = <span class="keyword">...</span>
-0086     deal(MIQPproblem.A,MIQPproblem.b,MIQPproblem.F,MIQPproblem.c,MIQPproblem.lb,MIQPproblem.ub,<span class="keyword">...</span>
-0087     MIQPproblem.csense,MIQPproblem.osense, MIQPproblem.vartype);
-0088 
-0089 t_start = clock;
-0090 <span class="keyword">switch</span> solver
-0091 <span class="comment">%% CPLEX through TOMLAB</span>
-0092     <span class="keyword">case</span> <span class="string">'tomlab_cplex'</span>
-0093         <span class="keyword">if</span> (~isempty(csense))
-0094             b_L(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
-0095             b_U(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
-0096             b_L(csense == <span class="string">'G'</span>) = b(csense == <span class="string">'G'</span>);
-0097             b_U(csense == <span class="string">'G'</span>) = inf;
-0098             b_L(csense == <span class="string">'L'</span>) = -inf;
-0099             b_U(csense == <span class="string">'L'</span>) = b(csense == <span class="string">'L'</span>);
-0100         <span class="keyword">else</span>
-0101             b_L = b;
-0102             b_U = b;
-0103         <span class="keyword">end</span>
-0104         intVars = find((vartype == <span class="string">'B'</span>) | (vartype == <span class="string">'I'</span>));
-0105         <span class="comment">%tomlabProblem = qpAssign(osense*F,osense*c,A,b_L,b_U,lb,ub,[],'CobraQP');</span>
-0106         tomlabProblem  = miqpAssign(osense*F, osense*c, A, b_L, b_U, lb, ub,[], <span class="keyword">...</span>
-0107                              intVars, [],[],[],<span class="string">'CobraMIQP'</span>);
-0108         tomlabProblem.CPLEX.LogFile = <span class="string">'MIQPproblem.log'</span>;
-0109         
-0110         <span class="comment">%optional parameters</span>
-0111         PriLvl = printLevel;
-0112         
-0113         <span class="comment">%Save Input if selected</span>
-0114         <span class="keyword">if</span> ~isempty(saveInput)
-0115             fileName = parameters.saveInput;
-0116             <span class="keyword">if</span> ~find(regexp(fileName,<span class="string">'.mat'</span>))
-0117                 fileName = [fileName <span class="string">'.mat'</span>];
-0118             <span class="keyword">end</span>
-0119             display([<span class="string">'Saving MIQPproblem in '</span> fileName]);
-0120             save(fileName,<span class="string">'MIQPproblem'</span>)
-0121         <span class="keyword">end</span>
-0122         tomlabProblem.MIP.cpxControl.TILIM = timeLimit; <span class="comment">% time limit</span>
-0123         tomlabProblem.MIP.cpxControl.THREADS = 1; <span class="comment">% by default use only one thread</span>
-0124         Result = tomRun(<span class="string">'cplex'</span>, tomlabProblem, PriLvl);
-0125         
-0126         x = Result.x_k;
-0127         f = osense*Result.f_k;
-0128         stat = Result.Inform;
-0129         <span class="keyword">if</span> (stat == 1 ||stat == 101 || stat == 102)
-0130             solStat = 1; <span class="comment">% Optimal</span>
-0131         <span class="keyword">elseif</span> (stat == 3 || stat == 4)
-0132             solStat = 0; <span class="comment">% Infeasible</span>
-0133         <span class="keyword">elseif</span> (stat == 103)
-0134             solStat = 0; <span class="comment">% Integer Infeasible</span>
-0135         <span class="keyword">elseif</span> (stat == 2 || stat == 118 || stat == 119)
-0136             solStat = 2; <span class="comment">% Unbounded</span>
-0137         <span class="keyword">elseif</span> (stat == 106 || stat == 108 || stat == 110 || stat == 112 || stat == 114 || stat == 117)
-0138             solStat = -1; <span class="comment">% No integer solution exists</span>
-0139         <span class="keyword">elseif</span> (stat &gt;= 10)
-0140             solStat = -1; <span class="comment">% No optimal solution found (time or other limits reached, other infeasibility problems)</span>
-0141         <span class="keyword">else</span>
-0142             solStat = 3; <span class="comment">% Solution exists, but either scaling problems or not proven to be optimal</span>
-0143         <span class="keyword">end</span> 
-0144     <span class="keyword">otherwise</span>
-0145         error([<span class="string">'Unknown solver: '</span> solver]);
-0146 <span class="keyword">end</span>
-0147 <span class="comment">%%</span>
-0148 t = etime(clock, t_start);
-0149 
-0150 solution.obj = f;
-0151 solution.solver = solver;
-0152 solution.stat = solStat;
-0153 solution.origStat = stat; 
-0154 solution.time = t;
-0155 solution.full = x;</pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+0057 <span class="comment">% Tim Harrington  05/18/12 Added support for the Gurobi 5.0 solver</span>
+0058 
+0059 <span class="keyword">global</span> CBT_MIQP_SOLVER;
+0060 solver = CBT_MIQP_SOLVER;
+0061 
+0062 <span class="comment">%optional parameters</span>
+0063 optParamNames = {<span class="string">'printLevel'</span>, <span class="string">'saveInput'</span>, <span class="string">'timeLimit'</span>};
+0064 parameters = <span class="string">''</span>;
+0065 <span class="keyword">if</span> nargin ~=1
+0066     <span class="keyword">if</span> mod(length(varargin),2)==0
+0067         <span class="keyword">for</span> i=1:2:length(varargin)-1
+0068             <span class="keyword">if</span> ismember(varargin{i},optParamNames)
+0069                 parameters.(varargin{i}) = varargin{i+1};
+0070             <span class="keyword">else</span>
+0071                 error([varargin{i} <span class="string">' is not a valid optional parameter'</span>]);
+0072             <span class="keyword">end</span>
+0073         <span class="keyword">end</span>
+0074     <span class="keyword">elseif</span> strcmp(varargin{1},<span class="string">'default'</span>)
+0075         parameters = <span class="string">'default'</span>;
+0076     <span class="keyword">elseif</span> isstruct(varargin{1})
+0077         parameters = varargin{1};
+0078     <span class="keyword">else</span>
+0079         display(<span class="string">'Warning: Invalid number of parameters/values'</span>)
+0080         solution=[];
+0081         <span class="keyword">return</span>;
+0082     <span class="keyword">end</span>
+0083 <span class="keyword">end</span>
+0084 [printLevel, saveInput, timeLimit] = <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'QP'</span>,optParamNames,parameters);
+0085 
+0086 [A,b,F,c,lb,ub,csense,osense, vartype] = <span class="keyword">...</span>
+0087     deal(MIQPproblem.A,MIQPproblem.b,MIQPproblem.F,MIQPproblem.c,MIQPproblem.lb,MIQPproblem.ub,<span class="keyword">...</span>
+0088     MIQPproblem.csense,MIQPproblem.osense, MIQPproblem.vartype);
+0089 
+0090 t_start = clock;
+0091 <span class="keyword">switch</span> solver
+0092 <span class="comment">%% CPLEX through TOMLAB</span>
+0093     <span class="keyword">case</span> <span class="string">'tomlab_cplex'</span>
+0094         <span class="keyword">if</span> (~isempty(csense))
+0095             b_L(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0096             b_U(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0097             b_L(csense == <span class="string">'G'</span>) = b(csense == <span class="string">'G'</span>);
+0098             b_U(csense == <span class="string">'G'</span>) = inf;
+0099             b_L(csense == <span class="string">'L'</span>) = -inf;
+0100             b_U(csense == <span class="string">'L'</span>) = b(csense == <span class="string">'L'</span>);
+0101         <span class="keyword">else</span>
+0102             b_L = b;
+0103             b_U = b;
+0104         <span class="keyword">end</span>
+0105         intVars = find((vartype == <span class="string">'B'</span>) | (vartype == <span class="string">'I'</span>));
+0106         <span class="comment">%tomlabProblem = qpAssign(osense*F,osense*c,A,b_L,b_U,lb,ub,[],'CobraQP');</span>
+0107         tomlabProblem  = miqpAssign(osense*F, osense*c, A, b_L, b_U, lb, ub,[], <span class="keyword">...</span>
+0108                              intVars, [],[],[],<span class="string">'CobraMIQP'</span>);
+0109         tomlabProblem.CPLEX.LogFile = <span class="string">'MIQPproblem.log'</span>;
+0110         
+0111         <span class="comment">%optional parameters</span>
+0112         PriLvl = printLevel;
+0113         
+0114         <span class="comment">%Save Input if selected</span>
+0115         <span class="keyword">if</span> ~isempty(saveInput)
+0116             fileName = parameters.saveInput;
+0117             <span class="keyword">if</span> ~find(regexp(fileName,<span class="string">'.mat'</span>))
+0118                 fileName = [fileName <span class="string">'.mat'</span>];
+0119             <span class="keyword">end</span>
+0120             display([<span class="string">'Saving MIQPproblem in '</span> fileName]);
+0121             save(fileName,<span class="string">'MIQPproblem'</span>)
+0122         <span class="keyword">end</span>
+0123         tomlabProblem.MIP.cpxControl.TILIM = timeLimit; <span class="comment">% time limit</span>
+0124         tomlabProblem.MIP.cpxControl.THREADS = 1; <span class="comment">% by default use only one thread</span>
+0125         Result = tomRun(<span class="string">'cplex'</span>, tomlabProblem, PriLvl);
+0126         
+0127         x = Result.x_k;
+0128         f = osense*Result.f_k;
+0129         stat = Result.Inform;
+0130         <span class="keyword">if</span> (stat == 1 ||stat == 101 || stat == 102)
+0131             solStat = 1; <span class="comment">% Optimal</span>
+0132         <span class="keyword">elseif</span> (stat == 3 || stat == 4)
+0133             solStat = 0; <span class="comment">% Infeasible</span>
+0134         <span class="keyword">elseif</span> (stat == 103)
+0135             solStat = 0; <span class="comment">% Integer Infeasible</span>
+0136         <span class="keyword">elseif</span> (stat == 2 || stat == 118 || stat == 119)
+0137             solStat = 2; <span class="comment">% Unbounded</span>
+0138         <span class="keyword">elseif</span> (stat == 106 || stat == 108 || stat == 110 || stat == 112 || stat == 114 || stat == 117)
+0139             solStat = -1; <span class="comment">% No integer solution exists</span>
+0140         <span class="keyword">elseif</span> (stat &gt;= 10)
+0141             solStat = -1; <span class="comment">% No optimal solution found (time or other limits reached, other infeasibility problems)</span>
+0142         <span class="keyword">else</span>
+0143             solStat = 3; <span class="comment">% Solution exists, but either scaling problems or not proven to be optimal</span>
+0144         <span class="keyword">end</span>
+0145             <span class="comment">%%</span>
+0146     <span class="keyword">case</span> <span class="string">'gurobi'</span>
+0147         <span class="comment">% Free academic licenses for the Gurobi solver can be obtained from</span>
+0148         <span class="comment">% http://www.gurobi.com/html/academic.html</span>
+0149         <span class="comment">%</span>
+0150         <span class="comment">% The code below uses Gurobi Mex to interface with Gurobi. It can be downloaded from</span>
+0151         <span class="comment">% http://www.convexoptimization.com/wikimization/index.php/Gurobi_Mex:_A_MATLAB_interface_for_Gurobi</span>
+0152 
+0153         clear opts            <span class="comment">% Use the default parameter settings</span>
+0154         <span class="keyword">if</span> printLevel == 0
+0155            <span class="comment">% Version v1.10 of Gurobi Mex has a minor bug. For complete silence</span>
+0156            <span class="comment">% Remove Line 736 of gurobi_mex.c: mexPrintf(&quot;\n&quot;);</span>
+0157            opts.Display = 0;
+0158            opts.DisplayInterval = 0;
+0159         <span class="keyword">else</span>
+0160            opts.Display = 1;
+0161         <span class="keyword">end</span>
+0162 
+0163         
+0164         
+0165         <span class="keyword">if</span> (isempty(csense))
+0166             clear csense
+0167             csense(1:length(b),1) = <span class="string">'='</span>;
+0168         <span class="keyword">else</span>
+0169             csense(csense == <span class="string">'L'</span>) = <span class="string">'&lt;'</span>;
+0170             csense(csense == <span class="string">'G'</span>) = <span class="string">'&gt;'</span>;
+0171             csense(csense == <span class="string">'E'</span>) = <span class="string">'='</span>;
+0172             csense = csense(:);
+0173         <span class="keyword">end</span>
+0174         
+0175         <span class="comment">% Gurobi passes individual terms instead of an F matrix. qrow and</span>
+0176         <span class="comment">% qcol specify which variables are multipled to get each term,</span>
+0177         <span class="comment">% while qval specifies the coefficients of each term.</span>
+0178 
+0179         [qrow,qcol,qval]=find(F);
+0180         qrow=qrow'-1;   <span class="comment">% -1 because gurobi numbers indices from zero, not one.</span>
+0181         qcol=qcol'-1;
+0182         qval=0.5*qval';
+0183         
+0184         opts.QP.qrow = int32(qrow); 
+0185         opts.QP.qcol = int32(qcol); 
+0186         opts.QP.qval = qval;
+0187         opts.Method = 0;    <span class="comment">% 0 - primal, 1 - dual</span>
+0188         opts.Presolve = -1; <span class="comment">% -1 - auto, 0 - no, 1 - conserv, 2 - aggressive</span>
+0189         opts.FeasibilityTol = 1e-6;
+0190         opts.IntFeasTol = 1e-5;
+0191         opts.OptimalityTol = 1e-6;
+0192         <span class="comment">%opt.Quad=1;</span>
+0193         
+0194         <span class="comment">%gurobi_mex doesn't cast logicals to doubles automatically</span>
+0195         c = double(c);
+0196         [x,f,origStat,output,y] = gurobi_mex(c,osense,sparse(A),b, <span class="keyword">...</span>
+0197                                              csense,lb,ub,vartype,opts);
+0198         <span class="keyword">if</span> origStat==2
+0199            stat = 1; <span class="comment">% Optimal solutuion found</span>
+0200         <span class="keyword">elseif</span> origStat==3
+0201            stat = 0; <span class="comment">% Infeasible</span>
+0202         <span class="keyword">elseif</span> origStat==5
+0203            stat = 2; <span class="comment">% Unbounded</span>
+0204         <span class="keyword">elseif</span> origStat==4
+0205            stat = 0; <span class="comment">% Gurobi reports infeasible *or* unbounded</span>
+0206         <span class="keyword">else</span>
+0207            stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0208         <span class="keyword">end</span>
+0209         solStat = stat;
+0210     <span class="keyword">case</span> <span class="string">'gurobi5'</span>
+0211      <span class="comment">%% gurobi5</span>
+0212      <span class="comment">% Free academic licenses for the Gurobi solver can be obtained from</span>
+0213         <span class="comment">% http://www.gurobi.com/html/academic.html</span>
+0214         resultgurobi = struct(<span class="string">'x'</span>,[],<span class="string">'objval'</span>,[],<span class="string">'pi'</span>,[]);
+0215         clear params            <span class="comment">% Use the default parameter settings</span>
+0216         <span class="keyword">if</span> printLevel == 0 
+0217             params.OutputFlag = 0;
+0218             params.DisplayInterval = 1;
+0219         <span class="keyword">else</span>
+0220             params.OutputFlag = 1;
+0221             params.DisplayInterval = 5;
+0222         <span class="keyword">end</span>
+0223 
+0224         params.Method = 0;    <span class="comment">%-1 = automatic, 0 = primal simplex, 1 = dual simplex, 2 = barrier, 3 = concurrent, 4 = deterministic concurrent</span>
+0225         params.Presolve = -1; <span class="comment">% -1 - auto, 0 - no, 1 - conserv, 2 - aggressive</span>
+0226         params.IntFeasTol = 1e-5;
+0227         params.FeasibilityTol = 1e-6;
+0228         params.OptimalityTol = 1e-6;
+0229         
+0230         <span class="keyword">if</span> (isempty(MIQPproblem.csense))
+0231             clear MIQPproblem.csense
+0232             MIQPproblem.csense(1:length(b),1) = <span class="string">'='</span>;
+0233         <span class="keyword">else</span>
+0234             MIQPproblem.csense(MIQPproblem.csense == <span class="string">'L'</span>) = <span class="string">'&lt;'</span>;
+0235             MIQPproblem.csense(MIQPproblem.csense == <span class="string">'G'</span>) = <span class="string">'&gt;'</span>;
+0236             MIQPproblem.csense(MIQPproblem.csense == <span class="string">'E'</span>) = <span class="string">'='</span>;
+0237             MIQPproblem.csense = MIQPproblem.csense(:);
+0238         <span class="keyword">end</span>
+0239     
+0240         <span class="keyword">if</span> MIQPproblem.osense == -1
+0241             MIQPproblem.osense = <span class="string">'max'</span>;
+0242         <span class="keyword">else</span>
+0243             MIQPproblem.osense = <span class="string">'min'</span>;
+0244         <span class="keyword">end</span>
+0245         
+0246         MIQPproblem.vtype = vartype;
+0247         MIQPproblem.Q = 0.5*sparse(MIQPproblem.F);
+0248         MIQPproblem.modelsense = MIQPproblem.osense;
+0249         [MIQPproblem.A,MIQPproblem.rhs,MIQPproblem.obj,MIQPproblem.sense] = deal(sparse(MIQPproblem.A),MIQPproblem.b,MIQPproblem.c,MIQPproblem.csense);
+0250         resultgurobi = gurobi(MIQPproblem,params);
+0251         solStat = resultgurobi.status;
+0252         <span class="keyword">if</span> strcmp(resultgurobi.status,<span class="string">'OPTIMAL'</span>)
+0253            stat = 1; <span class="comment">% Optimal solution found</span>
+0254            
+0255            <span class="keyword">if</span> exist(<span class="string">'resultgurobi.pi'</span>)
+0256                [x,f,y] = deal(resultgurobi.x,resultgurobi.objval,resultgurobi.pi);
+0257            <span class="keyword">else</span>
+0258                [x,f] = deal(resultgurobi.x,resultgurobi.objval);
+0259            <span class="keyword">end</span>
+0260         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'INFEASIBLE'</span>)
+0261            stat = 0; <span class="comment">% Infeasible</span>
+0262         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'UNBOUNDED'</span>)
+0263            stat = 2; <span class="comment">% Unbounded</span>
+0264         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'INF_OR_UNBD'</span>)
+0265            stat = 0; <span class="comment">% Gurobi reports infeasible *or* unbounded</span>
+0266         <span class="keyword">else</span>
+0267            stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0268         <span class="keyword">end</span>
+0269         <span class="comment">%%</span>
+0270     <span class="keyword">otherwise</span>
+0271         error([<span class="string">'Unknown solver: '</span> solver]);
+0272 <span class="keyword">end</span>
+0273 <span class="comment">%%</span>
+0274 t = etime(clock, t_start);
+0275 
+0276 solution.obj = f;
+0277 solution.solver = solver;
+0278 solution.stat = solStat;
+0279 solution.origStat = stat; 
+0280 solution.time = t;
+0281 solution.full = x;</pre></div>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>

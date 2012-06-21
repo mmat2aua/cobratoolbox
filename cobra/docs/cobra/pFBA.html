@@ -147,181 +147,183 @@ This function is called by:
 0071 
 0072 <span class="keyword">if</span> skipclass <span class="comment">% skip the model reduction and gene/rxn classification</span>
 0073     <span class="comment">% minimize the network flux</span>
-0074 [ MinimizedFlux modelIrrevFM]= <a href="#_sub1" class="code" title="subfunction [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)">minimizeModelFlux_local</a>(model,GeneOption);
-0075 modelIrrevFM = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(modelIrrevFM,<span class="string">'netFlux'</span>,MinimizedFlux.f,<span class="string">'b'</span>);
-0076 GeneClasses = [];
-0077 RxnClasses = [];
-0078 <span class="keyword">else</span>
-0079 
-0080 <span class="comment">% save a copy of the inputted model</span>
-0081 model_sav = model;
-0082 
-0083 <span class="comment">% Remove all blocked reactions</span>
-0084 [selExc,selUpt] = <a href="findExcRxns.html" class="code" title="function [selExc,selUpt] = findExcRxns(model,inclObjFlag,irrevFlag)">findExcRxns</a>(model,0,0); <span class="comment">% find and open up all exchanges</span>
-0085 tempmodel = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(model,model.rxns(selExc),-1000,<span class="string">'l'</span>);
-0086 tempmodel = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(tempmodel,model.rxns(selExc),1000,<span class="string">'u'</span>);
-0087 tempmodel = <a href="reduceModel.html" class="code" title="function [modelRed,hasFlux,maxes,mins] = reduceModel(model,tol,irrevFlag,verbFlag,negFluxAllowedFlag,checkConsistencyFlag,changeBoundsFlag)">reduceModel</a>(tempmodel); <span class="comment">% reduce the model to find blocked reactions</span>
-0088 Blocked_Rxns = setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>));
-0089 model = <a href="../cobra/reconstruction/removeRxns.html" class="code" title="function modelOut = removeRxns(model,rxnRemoveList,irrevFlag,metFlag)">removeRxns</a>(model,setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>))); <span class="comment">% remove blocked reactions</span>
-0090 Ind2Remove = find(~and(sum(full(model.rxnGeneMat),1),1));
-0091 Blocked_genes = model.genes(Ind2Remove);
-0092 model.genes(Ind2Remove)={<span class="string">'dead_end'</span>}; <span class="comment">% make sure genes that are unique to blocked reactions are tagged for removal</span>
-0093 
-0094 <span class="comment">% find essential genes</span>
-0095 grRatio = <a href="singleGeneDeletion.html" class="code" title="function [grRatio,grRateKO,grRateWT,hasEffect,delRxns,fluxSolution] = singleGeneDeletion(model,method,geneList,verbFlag)">singleGeneDeletion</a>(model);
-0096 grRatio(isnan(grRatio))=0;
-0097 pFBAEssential = model.genes(grRatio&lt;tol);
-0098 
-0099 <span class="keyword">if</span> nargout &gt; 1
-0100     <span class="comment">% find essential reactions</span>
-0101 RxnRatio = <a href="singleRxnDeletion.html" class="code" title="function [grRatio,grRateKO,grRateWT,hasEffect,delRxn,fluxSolution] = singleRxnDeletion(model,method,rxnList,verbFlag)">singleRxnDeletion</a>(model);
-0102 RxnRatio(isnan(RxnRatio))=0;
-0103 pFBAEssentialRxns = model.rxns(RxnRatio&lt;tol);
-0104 <span class="keyword">end</span>
-0105     
-0106 
-0107 <span class="comment">% remove zero flux rxns</span>
-0108 tempmodel = <a href="reduceModel.html" class="code" title="function [modelRed,hasFlux,maxes,mins] = reduceModel(model,tol,irrevFlag,verbFlag,negFluxAllowedFlag,checkConsistencyFlag,changeBoundsFlag)">reduceModel</a>(model);
-0109 ZeroFluxRxns = setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>));
-0110 model = <a href="../cobra/reconstruction/removeRxns.html" class="code" title="function modelOut = removeRxns(model,rxnRemoveList,irrevFlag,metFlag)">removeRxns</a>(model,ZeroFluxRxns);
-0111 
-0112 <span class="comment">% find MLE reactions</span>
-0113 FBAsoln = <a href="optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>(model);
-0114 model.lb(model.c==1) = FBAsoln.f;
-0115 [minFlux,maxFlux] = <a href="fluxVariability.html" class="code" title="function [minFlux,maxFlux,Vmin,Vmax] = fluxVariability(model,optPercentage,osenseStr,rxnNameList,verbFlag, allowLoops)">fluxVariability</a>(model,100);
-0116 <span class="keyword">for</span> i = 1:length(minFlux)
-0117     tmp(i,1) = max([abs(minFlux(i)) abs(maxFlux(i))])&lt;tol;
-0118 <span class="keyword">end</span>
-0119 MLE_Rxns = setdiff(model.rxns(tmp),ZeroFluxRxns);
-0120 
-0121 <span class="comment">% minimize the network flux</span>
-0122 [ MinimizedFlux modelIrrevFM]= <a href="#_sub1" class="code" title="subfunction [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)">minimizeModelFlux_local</a>(model,GeneOption);
-0123 
-0124 <span class="comment">% separate pFBA optima rxns from ELE rxns</span>
-0125 modelIrrevFM = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(modelIrrevFM,<span class="string">'netFlux'</span>,MinimizedFlux.f,<span class="string">'b'</span>);
-0126 [minFlux,maxFlux] = <a href="fluxVariability.html" class="code" title="function [minFlux,maxFlux,Vmin,Vmax] = fluxVariability(model,optPercentage,osenseStr,rxnNameList,verbFlag, allowLoops)">fluxVariability</a>(modelIrrevFM,100); 
-0127 pFBAopt_Rxns = modelIrrevFM.rxns((abs(minFlux)+abs(maxFlux))&gt;=tol);
-0128 ELE_Rxns = modelIrrevFM.rxns((abs(minFlux)+abs(maxFlux))&lt;=tol);
-0129 pFBAopt_Rxns = unique(regexprep(pFBAopt_Rxns,<span class="string">'_[f|b]$'</span>,<span class="string">''</span>));
-0130 ELE_Rxns = unique(regexprep(ELE_Rxns,<span class="string">'_[f|b]$'</span>,<span class="string">''</span>));
-0131 ELE_Rxns = ELE_Rxns(~ismember(ELE_Rxns,pFBAopt_Rxns));
-0132 ELE_Rxns = ELE_Rxns(~ismember(ELE_Rxns,MLE_Rxns));
-0133 
-0134 <span class="comment">% determine pFBA optima genes</span>
-0135 pFBAopt_Rxns(ismember(pFBAopt_Rxns,<span class="string">'netFlux'</span>))=[];
-0136 [geneList]=<a href="findGenesFromRxns.html" class="code" title="function [geneList]=findGenesFromRxns(model,reactions)">findGenesFromRxns</a>(model,pFBAopt_Rxns);
-0137 geneList2 = {};
-0138 <span class="keyword">for</span> i = 1:length(geneList),
-0139     geneList2(end+1:end+length(geneList{i}),1) = <a href="../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>( geneList{i});
-0140 <span class="keyword">end</span>
-0141 pFBAOptima = unique(geneList2);
-0142 
-0143 <span class="comment">% determine Zero Flux genes</span>
-0144 Ind2Remove = find(~and(sum(full(model.rxnGeneMat),1),1));
-0145 ZeroFluxGenes = unique(model.genes(Ind2Remove));
-0146 
-0147 <span class="comment">% determine ELE genes</span>
-0148 [geneList]=<a href="findGenesFromRxns.html" class="code" title="function [geneList]=findGenesFromRxns(model,reactions)">findGenesFromRxns</a>(model,ELE_Rxns);
-0149 geneList2 = {};
-0150 <span class="keyword">for</span> i = 1:length(geneList)
-0151     geneList2(end+1:end+length(geneList{i}),1) = <a href="../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>( geneList{i});
-0152 <span class="keyword">end</span>
-0153 ELEGenes = unique(geneList2);
-0154 ELEGenes = setdiff(ELEGenes,[pFBAOptima;ZeroFluxGenes]);
-0155 
-0156 <span class="comment">% determine Met ineff genes</span>
-0157 MLEGenes = setdiff(model.genes, [pFBAOptima;ZeroFluxGenes;ELEGenes]);
-0158 
-0159 <span class="comment">% clean up lists by removing non-genes</span>
-0160 pFBAOptima(~cellfun(<span class="string">'isempty'</span>,regexp(pFBAOptima,<span class="string">'dead_end'</span>)))=[];
-0161 ELEGenes(~cellfun(<span class="string">'isempty'</span>,regexp(ELEGenes ,<span class="string">'dead_end'</span>)))=[];
-0162 MLEGenes(~cellfun(<span class="string">'isempty'</span>,regexp(MLEGenes,<span class="string">'dead_end'</span>)))=[];
-0163 ZeroFluxGenes(~cellfun(<span class="string">'isempty'</span>,regexp(ZeroFluxGenes,<span class="string">'dead_end'</span>)))=[];
-0164 
-0165 pFBAOptima(cellfun(<span class="string">'isempty'</span>,pFBAOptima))=[];
-0166 ELEGenes(cellfun(<span class="string">'isempty'</span>,ELEGenes ))=[];
-0167 MLEGenes(cellfun(<span class="string">'isempty'</span>,MLEGenes))=[];
-0168 ZeroFluxGenes(cellfun(<span class="string">'isempty'</span>,ZeroFluxGenes))=[];
-0169 
-0170 <span class="comment">% filter out essential genes from pFBA optima</span>
-0171 pFBAOptima(ismember(pFBAOptima,pFBAEssential))=[];
-0172 
-0173 <span class="keyword">if</span> nargout &gt; 1
-0174 <span class="comment">% filter out essential Rxns from pFBA optima</span>
-0175 pFBAopt_Rxns(ismember(pFBAopt_Rxns,pFBAEssentialRxns))=[];
-0176 <span class="keyword">end</span>
-0177 
-0178 <span class="comment">% prepare output variables</span>
-0179 GeneClasses.pFBAEssential =pFBAEssential;
-0180 GeneClasses.pFBAoptima = pFBAOptima;
-0181 GeneClasses.ELEGenes = ELEGenes;
-0182 GeneClasses.MLEGenes = MLEGenes;
-0183 GeneClasses.ZeroFluxGenes = ZeroFluxGenes;
-0184 GeneClasses.Blockedgenes = Blocked_genes;
-0185 
-0186 RxnClasses.Essential_Rxns = pFBAEssentialRxns;
-0187 RxnClasses.pFBAOpt_Rxns = pFBAopt_Rxns;
-0188 RxnClasses.ELE_Rxns = ELE_Rxns;
-0189 RxnClasses.MLE_Rxns = MLE_Rxns;
-0190 RxnClasses.ZeroFlux_Rxns = ZeroFluxRxns;
-0191 RxnClasses.Blocked_Rxns = Blocked_Rxns;
-0192 
-0193 <span class="keyword">if</span> ~isempty(map)
-0194     MapVector = zeros(length(model_sav.rxns),1);
-0195     MapVector(ismember(model_sav.rxns,Blocked_Rxns))= 1;
-0196     MapVector(ismember(model_sav.rxns,ZeroFluxRxns))= 2;
-0197     MapVector(ismember(model_sav.rxns,MLE_Rxns))= 3;
-0198     MapVector(ismember(model_sav.rxns,ELE_Rxns))= 4;
-0199     MapVector(ismember(model_sav.rxns,pFBAopt_Rxns))= 5;
-0200     MapVector(ismember(model_sav.rxns,pFBAEssentialRxns))= 6;
-0201     
-0202     options.lb = 0;
-0203     options.ub = 6;
-0204     tmpCmap = hsv(18);
-0205     tmpCmap = [tmpCmap([1,3,4,6,11,14],:); 0 0 0;];
-0206     options.fileName = mapOutName;
-0207     options.colorScale = flipud(round(tmpCmap*255));
-0208     
-0209     <span class="keyword">global</span> CB_MAP_OUTPUT
-0210     <span class="keyword">if</span> ~exist(<span class="string">'CB_MAP_OUTPUT'</span>, <span class="string">'var'</span>) || isempty(CB_MAP_OUTPUT)
-0211         <a href="../cobra/maps/changeCbMapOutput.html" class="code" title="function outputFormatOK = changeCbMapOutput(outputFormat)">changeCbMapOutput</a>(<span class="string">'svg'</span>);
-0212     <span class="keyword">end</span>
-0213     <a href="../cobra/maps/drawFlux.html" class="code" title="function options = drawFlux(map,model,flux,options,varargin)">drawFlux</a>(map, model_sav, MapVector, options);
-0214 <span class="keyword">end</span>
-0215 <span class="keyword">end</span>
+0074 FBAsoln = <a href="optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>(model);
+0075 model.lb(model.c==1) = FBAsoln.f;
+0076 [ MinimizedFlux modelIrrevFM]= <a href="#_sub1" class="code" title="subfunction [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)">minimizeModelFlux_local</a>(model,GeneOption);
+0077 modelIrrevFM = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(modelIrrevFM,<span class="string">'netFlux'</span>,MinimizedFlux.f,<span class="string">'b'</span>);
+0078 GeneClasses = [];
+0079 RxnClasses = [];
+0080 <span class="keyword">else</span>
+0081 
+0082 <span class="comment">% save a copy of the inputted model</span>
+0083 model_sav = model;
+0084 
+0085 <span class="comment">% Remove all blocked reactions</span>
+0086 [selExc,selUpt] = <a href="findExcRxns.html" class="code" title="function [selExc,selUpt] = findExcRxns(model,inclObjFlag,irrevFlag)">findExcRxns</a>(model,0,0); <span class="comment">% find and open up all exchanges</span>
+0087 tempmodel = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(model,model.rxns(selExc),-1000,<span class="string">'l'</span>);
+0088 tempmodel = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(tempmodel,model.rxns(selExc),1000,<span class="string">'u'</span>);
+0089 tempmodel = <a href="reduceModel.html" class="code" title="function [modelRed,hasFlux,maxes,mins] = reduceModel(model,tol,irrevFlag,verbFlag,negFluxAllowedFlag,checkConsistencyFlag,changeBoundsFlag)">reduceModel</a>(tempmodel,tol); <span class="comment">% reduce the model to find blocked reactions</span>
+0090 Blocked_Rxns = setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>));
+0091 model = <a href="../cobra/reconstruction/removeRxns.html" class="code" title="function modelOut = removeRxns(model,rxnRemoveList,irrevFlag,metFlag)">removeRxns</a>(model,setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>))); <span class="comment">% remove blocked reactions</span>
+0092 Ind2Remove = find(~and(sum(full(model.rxnGeneMat),1),1));
+0093 Blocked_genes = model.genes(Ind2Remove);
+0094 model.genes(Ind2Remove)={<span class="string">'dead_end'</span>}; <span class="comment">% make sure genes that are unique to blocked reactions are tagged for removal</span>
+0095 
+0096 <span class="comment">% find essential genes</span>
+0097 grRatio = <a href="singleGeneDeletion.html" class="code" title="function [grRatio,grRateKO,grRateWT,hasEffect,delRxns,fluxSolution] = singleGeneDeletion(model,method,geneList,verbFlag)">singleGeneDeletion</a>(model);
+0098 grRatio(isnan(grRatio))=0;
+0099 pFBAEssential = model.genes(grRatio&lt;tol);
+0100 
+0101 <span class="keyword">if</span> nargout &gt; 1
+0102     <span class="comment">% find essential reactions</span>
+0103 RxnRatio = <a href="singleRxnDeletion.html" class="code" title="function [grRatio,grRateKO,grRateWT,hasEffect,delRxn,fluxSolution] = singleRxnDeletion(model,method,rxnList,verbFlag)">singleRxnDeletion</a>(model);
+0104 RxnRatio(isnan(RxnRatio))=0;
+0105 pFBAEssentialRxns = model.rxns(RxnRatio&lt;tol);
+0106 <span class="keyword">end</span>
+0107     
+0108 
+0109 <span class="comment">% remove zero flux rxns</span>
+0110 tempmodel = <a href="reduceModel.html" class="code" title="function [modelRed,hasFlux,maxes,mins] = reduceModel(model,tol,irrevFlag,verbFlag,negFluxAllowedFlag,checkConsistencyFlag,changeBoundsFlag)">reduceModel</a>(model,tol);
+0111 ZeroFluxRxns = setdiff(model.rxns,regexprep(tempmodel.rxns,<span class="string">'_r$'</span>,<span class="string">''</span>));
+0112 model = <a href="../cobra/reconstruction/removeRxns.html" class="code" title="function modelOut = removeRxns(model,rxnRemoveList,irrevFlag,metFlag)">removeRxns</a>(model,ZeroFluxRxns);
+0113 
+0114 <span class="comment">% find MLE reactions</span>
+0115 FBAsoln = <a href="optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>(model);
+0116 model.lb(model.c==1) = FBAsoln.f;
+0117 [minFlux,maxFlux] = <a href="fluxVariability.html" class="code" title="function [minFlux,maxFlux,Vmin,Vmax] = fluxVariability(model,optPercentage,osenseStr,rxnNameList,verbFlag, allowLoops)">fluxVariability</a>(model,100);
+0118 <span class="keyword">for</span> i = 1:length(minFlux)
+0119     tmp(i,1) = max([abs(minFlux(i)) abs(maxFlux(i))])&lt;tol;
+0120 <span class="keyword">end</span>
+0121 MLE_Rxns = setdiff(model.rxns(tmp),ZeroFluxRxns);
+0122 
+0123 <span class="comment">% minimize the network flux</span>
+0124 [ MinimizedFlux modelIrrevFM]= <a href="#_sub1" class="code" title="subfunction [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)">minimizeModelFlux_local</a>(model,GeneOption);
+0125 
+0126 <span class="comment">% separate pFBA optima rxns from ELE rxns</span>
+0127 modelIrrevFM = <a href="changeRxnBounds.html" class="code" title="function model = changeRxnBounds(model,rxnNameList,value,boundType)">changeRxnBounds</a>(modelIrrevFM,<span class="string">'netFlux'</span>,MinimizedFlux.f,<span class="string">'b'</span>);
+0128 [minFlux,maxFlux] = <a href="fluxVariability.html" class="code" title="function [minFlux,maxFlux,Vmin,Vmax] = fluxVariability(model,optPercentage,osenseStr,rxnNameList,verbFlag, allowLoops)">fluxVariability</a>(modelIrrevFM,100); 
+0129 pFBAopt_Rxns = modelIrrevFM.rxns((abs(minFlux)+abs(maxFlux))&gt;=tol);
+0130 ELE_Rxns = modelIrrevFM.rxns((abs(minFlux)+abs(maxFlux))&lt;=tol);
+0131 pFBAopt_Rxns = unique(regexprep(pFBAopt_Rxns,<span class="string">'_[f|b]$'</span>,<span class="string">''</span>));
+0132 ELE_Rxns = unique(regexprep(ELE_Rxns,<span class="string">'_[f|b]$'</span>,<span class="string">''</span>));
+0133 ELE_Rxns = ELE_Rxns(~ismember(ELE_Rxns,pFBAopt_Rxns));
+0134 ELE_Rxns = ELE_Rxns(~ismember(ELE_Rxns,MLE_Rxns));
+0135 
+0136 <span class="comment">% determine pFBA optima genes</span>
+0137 pFBAopt_Rxns(ismember(pFBAopt_Rxns,<span class="string">'netFlux'</span>))=[];
+0138 [geneList]=<a href="findGenesFromRxns.html" class="code" title="function [geneList]=findGenesFromRxns(model,reactions)">findGenesFromRxns</a>(model,pFBAopt_Rxns);
+0139 geneList2 = {};
+0140 <span class="keyword">for</span> i = 1:length(geneList),
+0141     geneList2(end+1:end+length(geneList{i}),1) = <a href="../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>( geneList{i});
+0142 <span class="keyword">end</span>
+0143 pFBAOptima = unique(geneList2);
+0144 
+0145 <span class="comment">% determine Zero Flux genes</span>
+0146 Ind2Remove = find(~and(sum(full(model.rxnGeneMat),1),1));
+0147 ZeroFluxGenes = unique(model.genes(Ind2Remove));
+0148 
+0149 <span class="comment">% determine ELE genes</span>
+0150 [geneList]=<a href="findGenesFromRxns.html" class="code" title="function [geneList]=findGenesFromRxns(model,reactions)">findGenesFromRxns</a>(model,ELE_Rxns);
+0151 geneList2 = {};
+0152 <span class="keyword">for</span> i = 1:length(geneList)
+0153     geneList2(end+1:end+length(geneList{i}),1) = <a href="../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>( geneList{i});
+0154 <span class="keyword">end</span>
+0155 ELEGenes = unique(geneList2);
+0156 ELEGenes = setdiff(ELEGenes,[pFBAOptima;ZeroFluxGenes]);
+0157 
+0158 <span class="comment">% determine Met ineff genes</span>
+0159 MLEGenes = setdiff(model.genes, [pFBAOptima;ZeroFluxGenes;ELEGenes]);
+0160 
+0161 <span class="comment">% clean up lists by removing non-genes</span>
+0162 pFBAOptima(~cellfun(<span class="string">'isempty'</span>,regexp(pFBAOptima,<span class="string">'dead_end'</span>)))=[];
+0163 ELEGenes(~cellfun(<span class="string">'isempty'</span>,regexp(ELEGenes ,<span class="string">'dead_end'</span>)))=[];
+0164 MLEGenes(~cellfun(<span class="string">'isempty'</span>,regexp(MLEGenes,<span class="string">'dead_end'</span>)))=[];
+0165 ZeroFluxGenes(~cellfun(<span class="string">'isempty'</span>,regexp(ZeroFluxGenes,<span class="string">'dead_end'</span>)))=[];
+0166 
+0167 pFBAOptima(cellfun(<span class="string">'isempty'</span>,pFBAOptima))=[];
+0168 ELEGenes(cellfun(<span class="string">'isempty'</span>,ELEGenes ))=[];
+0169 MLEGenes(cellfun(<span class="string">'isempty'</span>,MLEGenes))=[];
+0170 ZeroFluxGenes(cellfun(<span class="string">'isempty'</span>,ZeroFluxGenes))=[];
+0171 
+0172 <span class="comment">% filter out essential genes from pFBA optima</span>
+0173 pFBAOptima(ismember(pFBAOptima,pFBAEssential))=[];
+0174 
+0175 <span class="keyword">if</span> nargout &gt; 1
+0176 <span class="comment">% filter out essential Rxns from pFBA optima</span>
+0177 pFBAopt_Rxns(ismember(pFBAopt_Rxns,pFBAEssentialRxns))=[];
+0178 <span class="keyword">end</span>
+0179 
+0180 <span class="comment">% prepare output variables</span>
+0181 GeneClasses.pFBAEssential =pFBAEssential;
+0182 GeneClasses.pFBAoptima = pFBAOptima;
+0183 GeneClasses.ELEGenes = ELEGenes;
+0184 GeneClasses.MLEGenes = MLEGenes;
+0185 GeneClasses.ZeroFluxGenes = ZeroFluxGenes;
+0186 GeneClasses.Blockedgenes = Blocked_genes;
+0187 
+0188 RxnClasses.Essential_Rxns = pFBAEssentialRxns;
+0189 RxnClasses.pFBAOpt_Rxns = pFBAopt_Rxns;
+0190 RxnClasses.ELE_Rxns = ELE_Rxns;
+0191 RxnClasses.MLE_Rxns = MLE_Rxns;
+0192 RxnClasses.ZeroFlux_Rxns = ZeroFluxRxns;
+0193 RxnClasses.Blocked_Rxns = Blocked_Rxns;
+0194 
+0195 <span class="keyword">if</span> ~isempty(map)
+0196     MapVector = zeros(length(model_sav.rxns),1);
+0197     MapVector(ismember(model_sav.rxns,Blocked_Rxns))= 1;
+0198     MapVector(ismember(model_sav.rxns,ZeroFluxRxns))= 2;
+0199     MapVector(ismember(model_sav.rxns,MLE_Rxns))= 3;
+0200     MapVector(ismember(model_sav.rxns,ELE_Rxns))= 4;
+0201     MapVector(ismember(model_sav.rxns,pFBAopt_Rxns))= 5;
+0202     MapVector(ismember(model_sav.rxns,pFBAEssentialRxns))= 6;
+0203     
+0204     options.lb = 0;
+0205     options.ub = 6;
+0206     tmpCmap = hsv(18);
+0207     tmpCmap = [tmpCmap([1,3,4,6,11,14],:); 0 0 0;];
+0208     options.fileName = mapOutName;
+0209     options.colorScale = flipud(round(tmpCmap*255));
+0210     
+0211     <span class="keyword">global</span> CB_MAP_OUTPUT
+0212     <span class="keyword">if</span> ~exist(<span class="string">'CB_MAP_OUTPUT'</span>, <span class="string">'var'</span>) || isempty(CB_MAP_OUTPUT)
+0213         <a href="../cobra/maps/changeCbMapOutput.html" class="code" title="function outputFormatOK = changeCbMapOutput(outputFormat)">changeCbMapOutput</a>(<span class="string">'svg'</span>);
+0214     <span class="keyword">end</span>
+0215     <a href="../cobra/maps/drawFlux.html" class="code" title="function options = drawFlux(map,model,flux,options,varargin)">drawFlux</a>(map, model_sav, MapVector, options);
 0216 <span class="keyword">end</span>
-0217 
-0218 <a name="_sub1" href="#_subfunctions" class="code">function [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)</a>
-0219 <span class="comment">% This function finds the minimum flux through the network and returns the</span>
-0220 <span class="comment">% minimized flux and an irreversible model</span>
-0221 
-0222 <span class="comment">% convert model to irrev</span>
-0223 modelIrrev = <a href="convertToIrreversible.html" class="code" title="function [modelIrrev,matchRev,rev2irrev,irrev2rev] = convertToIrreversible(model)">convertToIrreversible</a>(model);
-0224 
-0225 <span class="comment">% add pseudo-metabolite to measure flux through network</span>
-0226 <span class="keyword">if</span> nargin==1,GeneOption=0;
-0227 <span class="keyword">end</span>
-0228 <span class="keyword">if</span> GeneOption==0, <span class="comment">% signal that you want to minimize the sum of all gene and non-gene associated fluxes</span>
-0229     modelIrrev.S(end+1,:) = ones(size(modelIrrev.S(1,:)));
-0230 <span class="keyword">elseif</span> GeneOption==1, <span class="comment">% signal that you want to minimize the sum of only gene-associated fluxes</span>
-0231     <span class="comment">%find all reactions which are gene associated</span>
-0232     Ind=find(sum(modelIrrev.rxnGeneMat,2)&gt;0);
-0233     modelIrrev.S(end+1,:) = zeros(size(modelIrrev.S(1,:)));
-0234     modelIrrev.S(<span class="keyword">end</span>,Ind) = 1;
-0235 <span class="keyword">end</span>
-0236 modelIrrev.b(end+1) = 0;
-0237 modelIrrev.mets{end+1} = <span class="string">'fluxMeasure'</span>;
-0238 
-0239 <span class="comment">% add a pseudo reaction that measures the flux through the network</span>
-0240 modelIrrev = <a href="../cobra/reconstruction/addReaction.html" class="code" title="function [model,rxnIDexists] = addReaction(model,rxnName,metaboliteList,stoichCoeffList,revFlag,lowerBound,upperBound,objCoeff,subSystem,grRule,geneNameList,systNameList,checkDuplicate)">addReaction</a>(modelIrrev,<span class="string">'netFlux'</span>,{<span class="string">'fluxMeasure'</span>},[-1],false,0,inf,0,<span class="string">''</span>,<span class="string">''</span>);
-0241 
-0242 <span class="comment">% set the flux measuring demand as the objective</span>
-0243 modelIrrev.c = zeros(length(modelIrrev.rxns),1);
-0244 modelIrrev = <a href="changeObjective.html" class="code" title="function model = changeObjective(model,rxnNameList,objectiveCoeff)">changeObjective</a>(modelIrrev, <span class="string">'netFlux'</span>);
-0245 
-0246 <span class="comment">% minimize the flux measuring demand (netFlux)</span>
-0247 MinimizedFlux = <a href="optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>(modelIrrev,<span class="string">'min'</span>);
-0248 <span class="keyword">end</span></pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+0217 <span class="keyword">end</span>
+0218 <span class="keyword">end</span>
+0219 
+0220 <a name="_sub1" href="#_subfunctions" class="code">function [ MinimizedFlux modelIrrev]= minimizeModelFlux_local(model,GeneOption)</a>
+0221 <span class="comment">% This function finds the minimum flux through the network and returns the</span>
+0222 <span class="comment">% minimized flux and an irreversible model</span>
+0223 
+0224 <span class="comment">% convert model to irrev</span>
+0225 modelIrrev = <a href="convertToIrreversible.html" class="code" title="function [modelIrrev,matchRev,rev2irrev,irrev2rev] = convertToIrreversible(model)">convertToIrreversible</a>(model);
+0226 
+0227 <span class="comment">% add pseudo-metabolite to measure flux through network</span>
+0228 <span class="keyword">if</span> nargin==1,GeneOption=0;
+0229 <span class="keyword">end</span>
+0230 <span class="keyword">if</span> GeneOption==0, <span class="comment">% signal that you want to minimize the sum of all gene and non-gene associated fluxes</span>
+0231     modelIrrev.S(end+1,:) = ones(size(modelIrrev.S(1,:)));
+0232 <span class="keyword">elseif</span> GeneOption==1, <span class="comment">% signal that you want to minimize the sum of only gene-associated fluxes</span>
+0233     <span class="comment">%find all reactions which are gene associated</span>
+0234     Ind=find(sum(modelIrrev.rxnGeneMat,2)&gt;0);
+0235     modelIrrev.S(end+1,:) = zeros(size(modelIrrev.S(1,:)));
+0236     modelIrrev.S(<span class="keyword">end</span>,Ind) = 1;
+0237 <span class="keyword">end</span>
+0238 modelIrrev.b(end+1) = 0;
+0239 modelIrrev.mets{end+1} = <span class="string">'fluxMeasure'</span>;
+0240 
+0241 <span class="comment">% add a pseudo reaction that measures the flux through the network</span>
+0242 modelIrrev = <a href="../cobra/reconstruction/addReaction.html" class="code" title="function [model,rxnIDexists] = addReaction(model,rxnName,metaboliteList,stoichCoeffList,revFlag,lowerBound,upperBound,objCoeff,subSystem,grRule,geneNameList,systNameList,checkDuplicate)">addReaction</a>(modelIrrev,<span class="string">'netFlux'</span>,{<span class="string">'fluxMeasure'</span>},[-1],false,0,inf,0,<span class="string">''</span>,<span class="string">''</span>);
+0243 
+0244 <span class="comment">% set the flux measuring demand as the objective</span>
+0245 modelIrrev.c = zeros(length(modelIrrev.rxns),1);
+0246 modelIrrev = <a href="changeObjective.html" class="code" title="function model = changeObjective(model,rxnNameList,objectiveCoeff)">changeObjective</a>(modelIrrev, <span class="string">'netFlux'</span>);
+0247 
+0248 <span class="comment">% minimize the flux measuring demand (netFlux)</span>
+0249 MinimizedFlux = <a href="optimizeCbModel.html" class="code" title="function FBAsolution = optimizeCbModel(model,osenseStr, minNorm, allowLoops)">optimizeCbModel</a>(modelIrrev,<span class="string">'min'</span>);
+0250 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>

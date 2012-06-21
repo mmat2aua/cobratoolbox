@@ -89,70 +89,76 @@ This function is called by:
 0034 <span class="comment">% CobraLPSolver = 'glpk';</span>
 0035  <span class="comment">%CobraLPSolver = 'mosek';</span>
 0036 <span class="comment">% CobraLPSolver = 'cplx';</span>
-0037 
-0038 CobraLPSolvers = { <span class="string">'gurobi'</span>, <span class="string">'tomlab_cplex'</span>, <span class="string">'glpk'</span>, <span class="string">'mosek'</span>, <span class="string">'cplx'</span> };
-0039 <span class="keyword">for</span> CobraLPSolver = CobraLPSolvers
-0040     LPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraLPSolver));
-0041     <span class="keyword">if</span> LPsolverOK
-0042         fprintf(<span class="string">'LP solver set to %s successful\n'</span>,char(CobraLPSolver));
-0043         <span class="keyword">break</span>;
-0044     <span class="keyword">end</span>
-0045 <span class="keyword">end</span>
-0046 <span class="keyword">if</span> ~LPsolverOK
-0047     fprintf(<span class="string">'LP solver set failed\n'</span>);
-0048 <span class="keyword">end</span>
-0049 <span class="comment">% Define default MILP solver</span>
-0050 <span class="comment">%CobraMILPSolver = 'tomlab_cplex';</span>
-0051 <span class="comment">%CobraMILPSolver = 'glpk';</span>
-0052 <span class="keyword">for</span> CobraMILPSolver = { <span class="string">'gurobi'</span>, <span class="string">'tomlab_cplex'</span> <span class="string">'glpk'</span> }
-0053     MILPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraMILPSolver),<span class="string">'MILP'</span>);
-0054     <span class="keyword">if</span> MILPsolverOK
-0055         fprintf(<span class="string">'MILP solver set to %s successful\n'</span>,char(CobraMILPSolver));
-0056         <span class="keyword">break</span>;
-0057    <span class="keyword">end</span> 
-0058 <span class="keyword">end</span>
-0059 <span class="keyword">if</span> ~MILPsolverOK
-0060     fprintf(<span class="string">'MILP solver set failed\n'</span>);
-0061 <span class="keyword">end</span>
-0062 <span class="comment">% Define default QP solver</span>
-0063 <span class="comment">%CobraQPSolver = 'tomlab_cplex';</span>
-0064 <span class="keyword">for</span> CobraQPSolver = { <span class="string">'tomlab_cplex'</span> <span class="string">'qpng'</span> }
-0065     QPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraQPSolver),<span class="string">'QP'</span>);
-0066     <span class="keyword">if</span> QPsolverOK
-0067         fprintf(<span class="string">'QP solver set to %s successful\n'</span>,char(CobraQPSolver));
-0068         <span class="keyword">break</span>;
-0069     <span class="keyword">end</span>
-0070 <span class="keyword">end</span>
-0071 <span class="keyword">if</span> ~QPsolverOK
-0072     fprintf(<span class="string">'QP solver set failed\n'</span>);
-0073 <span class="keyword">end</span>
-0074 <span class="comment">% Define default MIQP solver</span>
-0075 CobraMIQPSolver = <span class="string">'tomlab_cplex'</span>;
-0076 MIQPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(CobraMIQPSolver,<span class="string">'MIQP'</span>);
-0077 <span class="keyword">if</span> MIQPsolverOK
-0078     fprintf(<span class="string">'MIQP solver set to %s successful\n'</span>,CobraMIQPSolver);
-0079 <span class="keyword">else</span>
-0080     fprintf(<span class="string">'MIQP solver set failed\n'</span>);
-0081 <span class="keyword">end</span>
-0082 
-0083 <span class="comment">% Define default CB map output</span>
-0084 <span class="comment">% CbMapOutput = 'matlab';</span>
-0085 CbMapOutput = <span class="string">'svg'</span>;
-0086 CbMapOutputOK = <a href="../cobra/maps/changeCbMapOutput.html" class="code" title="function outputFormatOK = changeCbMapOutput(outputFormat)">changeCbMapOutput</a>(CbMapOutput);
-0087 <span class="keyword">if</span> CbMapOutputOK
-0088     fprintf(<span class="string">'CB map output set to %s successful\n'</span>,CbMapOutput);
-0089 <span class="keyword">else</span>
-0090     fprintf(<span class="string">'Cb map output set failed\n'</span>);
-0091 <span class="keyword">end</span>
-0092 
-0093 
-0094 <span class="comment">% Set global LP solution accuracy tolerance</span>
-0095 changeOK = <a href="../cobra/solvers/changeCobraSolverParams.html" class="code" title="function changeOK = changeCobraSolverParams(solverType,paramName,paramValue)">changeCobraSolverParams</a>(<span class="string">'LP'</span>,<span class="string">'objTol'</span>,1e-6);
-0096 
-0097 <span class="comment">% Check that SBML toolbox is installed and accessible</span>
-0098 <span class="keyword">if</span> (~exist(<span class="string">'TranslateSBML'</span>))
-0099     warning(<span class="string">'SBML Toolbox not in Matlab path: COBRA Toolbox will be unable to read SBML files'</span>);
-0100 <span class="keyword">end</span></pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+0037 <span class="keyword">if</span> isunix
+0038   addpath(<span class="string">'/usr/local/lib/'</span>);
+0039 <span class="keyword">end</span>
+0040 CobraLPSolvers = { <span class="string">'gurobi5'</span>, <span class="string">'gurobi'</span>, <span class="string">'tomlab_cplex'</span>, <span class="string">'glpk'</span>, <span class="string">'mosek'</span>, <span class="string">'cplx'</span> };
+0041 <span class="keyword">for</span> CobraLPSolver = CobraLPSolvers
+0042     LPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraLPSolver));
+0043     <span class="keyword">if</span> LPsolverOK
+0044         fprintf(<span class="string">'LP solver set to %s successful\n'</span>,char(CobraLPSolver));
+0045         <span class="keyword">break</span>;
+0046     <span class="keyword">end</span>
+0047 <span class="keyword">end</span>
+0048 <span class="keyword">if</span> ~LPsolverOK
+0049     fprintf(<span class="string">'LP solver set failed\n'</span>);
+0050 <span class="keyword">end</span>
+0051 <span class="comment">% Define default MILP solver</span>
+0052 <span class="comment">%CobraMILPSolver = 'tomlab_cplex';</span>
+0053 <span class="comment">%CobraMILPSolver = 'glpk';</span>
+0054 <span class="keyword">for</span> CobraMILPSolver = { <span class="string">'gurobi5'</span>, <span class="string">'gurobi'</span>, <span class="string">'tomlab_cplex'</span>, <span class="string">'glpk'</span> }
+0055     MILPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraMILPSolver),<span class="string">'MILP'</span>);
+0056     <span class="keyword">if</span> MILPsolverOK
+0057         fprintf(<span class="string">'MILP solver set to %s successful\n'</span>,char(CobraMILPSolver));
+0058         <span class="keyword">break</span>;
+0059    <span class="keyword">end</span> 
+0060 <span class="keyword">end</span>
+0061 <span class="keyword">if</span> ~MILPsolverOK
+0062     fprintf(<span class="string">'MILP solver set failed\n'</span>);
+0063 <span class="keyword">end</span>
+0064 <span class="comment">% Define default QP solver</span>
+0065 <span class="comment">%CobraQPSolver = 'tomlab_cplex';</span>
+0066 <span class="keyword">for</span> CobraQPSolver = {<span class="string">'gurobi5'</span>, <span class="string">'gurobi'</span>, <span class="string">'tomlab_cplex'</span>, <span class="string">'qpng'</span> }
+0067     QPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraQPSolver),<span class="string">'QP'</span>);
+0068     <span class="keyword">if</span> QPsolverOK
+0069         fprintf(<span class="string">'QP solver set to %s successful\n'</span>,char(CobraQPSolver));
+0070         <span class="keyword">break</span>;
+0071     <span class="keyword">end</span>
+0072 <span class="keyword">end</span>
+0073 <span class="keyword">if</span> ~QPsolverOK
+0074     fprintf(<span class="string">'QP solver set failed\n'</span>);
+0075 <span class="keyword">end</span>
+0076 <span class="comment">% Define default MIQP solver</span>
+0077 <span class="keyword">for</span> CobraMIQPSolver = {<span class="string">'gurobi5'</span>, <span class="string">'gurobi'</span> <span class="string">'tomlab_cplex'</span>}
+0078     MIQPsolverOK = <a href="../cobra/solvers/changeCobraSolver.html" class="code" title="function solverOK = changeCobraSolver(solverName,solverType)">changeCobraSolver</a>(char(CobraMIQPSolver),<span class="string">'MIQP'</span>);
+0079     <span class="keyword">if</span> MIQPsolverOK
+0080         fprintf(<span class="string">'MIQP solver set to %s successful\n'</span>,char(CobraMIQPSolver));
+0081         <span class="keyword">break</span>;
+0082     <span class="keyword">end</span>
+0083 <span class="keyword">end</span>
+0084 <span class="keyword">if</span> ~MIQPsolverOK
+0085     fprintf(<span class="string">'MIQP solver set failed\n'</span>);
+0086 <span class="keyword">end</span>
+0087 
+0088 
+0089 <span class="comment">% Define default CB map output</span>
+0090 <span class="comment">% CbMapOutput = 'matlab';</span>
+0091 CbMapOutput = <span class="string">'svg'</span>;
+0092 CbMapOutputOK = <a href="../cobra/maps/changeCbMapOutput.html" class="code" title="function outputFormatOK = changeCbMapOutput(outputFormat)">changeCbMapOutput</a>(CbMapOutput);
+0093 <span class="keyword">if</span> CbMapOutputOK
+0094     fprintf(<span class="string">'CB map output set to %s successful\n'</span>,CbMapOutput);
+0095 <span class="keyword">else</span>    
+0096     fprintf(<span class="string">'Cb map output set failed\n'</span>);
+0097 <span class="keyword">end</span>
+0098 
+0099 
+0100 <span class="comment">% Set global LP solution accuracy tolerance</span>
+0101 changeOK = <a href="../cobra/solvers/changeCobraSolverParams.html" class="code" title="function changeOK = changeCobraSolverParams(solverType,paramName,paramValue)">changeCobraSolverParams</a>(<span class="string">'LP'</span>,<span class="string">'objTol'</span>,1e-6);
+0102 
+0103 <span class="comment">% Check that SBML toolbox is installed and accessible</span>
+0104 <span class="keyword">if</span> (~exist(<span class="string">'TranslateSBML'</span>))
+0105     warning(<span class="string">'SBML Toolbox not in Matlab path: COBRA Toolbox will be unable to read SBML files'</span>);
+0106 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>

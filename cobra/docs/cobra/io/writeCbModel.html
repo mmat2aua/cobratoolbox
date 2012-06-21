@@ -48,7 +48,7 @@ OPTIONAL INPUTS
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
 This function calls:
 <ul style="list-style-image:url(../../matlabicon.gif)">
-<li><a href="convertCobraToSBML.html" class="code" title="function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList)">convertCobraToSBML</a>	convertCobraToSBML converts a cobra structure to an sbml</li><li><a href="../../cobra/printRxnFormula.html" class="code" title="function formulas = printRxnFormula(model,rxnAbbrList,printFlag,lineChangeFlag,metNameFlag,fid,directionFlag)">printRxnFormula</a>	printRxnFormula Print the reaction formulas for a list of reactions</li></ul>
+<li><a href="convertCobraToSBML.html" class="code" title="function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList,debug_function)">convertCobraToSBML</a>	convertCobraToSBML converts a cobra structure to an sbml</li><li><a href="../../cobra/printRxnFormula.html" class="code" title="function formulas = printRxnFormula(model,rxnAbbrList,printFlag,lineChangeFlag,metNameFlag,fid,directionFlag)">printRxnFormula</a>	printRxnFormula Print the reaction formulas for a list of reactions</li></ul>
 This function is called by:
 <ul style="list-style-image:url(../../matlabicon.gif)">
 </ul>
@@ -312,7 +312,7 @@ This function is called by:
 0252         <span class="keyword">end</span>
 0253         <span class="comment">%% SBML</span>
 0254     <span class="keyword">case</span> <span class="string">'sbml'</span>
-0255         sbmlModel = <a href="convertCobraToSBML.html" class="code" title="function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList)">convertCobraToSBML</a>(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList);
+0255         sbmlModel = <a href="convertCobraToSBML.html" class="code" title="function sbmlModel = convertCobraToSBML(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList,debug_function)">convertCobraToSBML</a>(model,sbmlLevel,sbmlVersion,compSymbolList,compNameList);
 0256         <span class="keyword">if</span> exist(<span class="string">'fileName'</span>,<span class="string">'var'</span>)&amp;&amp;~isempty(fileName)
 0257             OutputSBML(sbmlModel,fileName);
 0258         <span class="keyword">else</span>
@@ -341,6 +341,6 @@ This function is called by:
 0281     geneStr = [geneStr <span class="string">' '</span> geneNames{i}];
 0282 <span class="keyword">end</span>
 0283 geneStr = strtrim(geneStr);</pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>

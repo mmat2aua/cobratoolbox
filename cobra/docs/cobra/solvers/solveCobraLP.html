@@ -100,7 +100,8 @@ OUTPUT
  Ronan Fleming      12/07/09 Commenting of input/output
  Ronan Fleming      21/01/10 Not having second input, means use the parameters as specified in the
                              global paramerer variable, rather than 'default' parameters
- Steinn Gudmundsson 03/03/10 Added support for the Gurobi solver</pre></div>
+ Steinn Gudmundsson 03/03/10 Added support for the Gurobi solver
+ Tim Harrington     05/18/12 Added support for the Gurobi 5.0 solver</pre></div>
 
 <!-- crossreference -->
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
@@ -195,441 +196,495 @@ This function is called by:
 0077 <span class="comment">% Ronan Fleming      21/01/10 Not having second input, means use the parameters as specified in the</span>
 0078 <span class="comment">%                             global paramerer variable, rather than 'default' parameters</span>
 0079 <span class="comment">% Steinn Gudmundsson 03/03/10 Added support for the Gurobi solver</span>
-0080 
-0081 <span class="comment">%% Process arguments etc</span>
+0080 <span class="comment">% Tim Harrington     05/18/12 Added support for the Gurobi 5.0 solver</span>
+0081 
 0082 
-0083 <span class="keyword">global</span> CBTLPSOLVER
-0084 <span class="keyword">if</span> (~isempty(CBTLPSOLVER))
-0085     solver = CBTLPSOLVER;
-0086 <span class="keyword">else</span>
-0087     error(<span class="string">'No solver found.  call changeCobraSolver(solverName)'</span>);
-0088 <span class="keyword">end</span>
-0089 optParamNames = {<span class="string">'minNorm'</span>,<span class="string">'printLevel'</span>,<span class="string">'primalOnly'</span>,<span class="string">'saveInput'</span>, <span class="keyword">...</span>
-0090     <span class="string">'feasTol'</span>,<span class="string">'optTol'</span>,<span class="string">'EleNames'</span>,<span class="string">'EqtNames'</span>,<span class="string">'VarNames'</span>,<span class="string">'EleNameFun'</span>, <span class="keyword">...</span>
-0091     <span class="string">'EqtNameFun'</span>,<span class="string">'VarNameFun'</span>,<span class="string">'PbName'</span>,<span class="string">'MPSfilename'</span>};
-0092 parameters = <span class="string">''</span>;
-0093 <span class="keyword">if</span> nargin ~=1
-0094     <span class="keyword">if</span> mod(length(varargin),2)==0
-0095         <span class="keyword">for</span> i=1:2:length(varargin)-1
-0096             <span class="keyword">if</span> ismember(varargin{i},optParamNames)
-0097                 parameters.(varargin{i}) = varargin{i+1};
-0098             <span class="keyword">else</span>
-0099                 error([varargin{i} <span class="string">' is not a valid optional parameter'</span>]);
-0100             <span class="keyword">end</span>
-0101         <span class="keyword">end</span>
-0102     <span class="keyword">elseif</span> strcmp(varargin{1},<span class="string">'default'</span>)
-0103         parameters = <span class="string">'default'</span>;
-0104     <span class="keyword">elseif</span> isstruct(varargin{1})
-0105         parameters = varargin{1};
-0106     <span class="keyword">else</span>
-0107         display(<span class="string">'Warning: Invalid number of parameters/values'</span>)
-0108         solution=[];
-0109         <span class="keyword">return</span>;
-0110     <span class="keyword">end</span>
-0111 <span class="keyword">end</span>
-0112 [minNorm, printLevel, primalOnlyFlag, saveInput, feasTol, optTol] = <span class="keyword">...</span>
-0113     <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'LP'</span>,optParamNames(1:6),parameters);
-0114 
-0115 
-0116 <span class="comment">%Save Input if selected</span>
-0117 <span class="keyword">if</span> ~isempty(saveInput)
-0118     fileName = parameters.saveInput;
-0119     <span class="keyword">if</span> ~find(regexp(fileName,<span class="string">'.mat'</span>))
-0120         fileName = [fileName <span class="string">'.mat'</span>];
-0121     <span class="keyword">end</span>
-0122     display([<span class="string">'Saving LPproblem in '</span> fileName]);
-0123     save(fileName,<span class="string">'LPproblem'</span>)
-0124 <span class="keyword">end</span>
-0125 
-0126 
-0127 [A,b,c,lb,ub,csense,osense] = deal(LPproblem.A,LPproblem.b,LPproblem.c,LPproblem.lb,LPproblem.ub,LPproblem.csense,LPproblem.osense);
+0083 <span class="comment">%% Process arguments etc</span>
+0084 
+0085 <span class="keyword">global</span> CBTLPSOLVER
+0086 <span class="keyword">if</span> (~isempty(CBTLPSOLVER))
+0087     solver = CBTLPSOLVER;
+0088 <span class="keyword">else</span>
+0089     error(<span class="string">'No solver found.  call changeCobraSolver(solverName)'</span>);
+0090 <span class="keyword">end</span>
+0091 optParamNames = {<span class="string">'minNorm'</span>,<span class="string">'printLevel'</span>,<span class="string">'primalOnly'</span>,<span class="string">'saveInput'</span>, <span class="keyword">...</span>
+0092     <span class="string">'feasTol'</span>,<span class="string">'optTol'</span>,<span class="string">'EleNames'</span>,<span class="string">'EqtNames'</span>,<span class="string">'VarNames'</span>,<span class="string">'EleNameFun'</span>, <span class="keyword">...</span>
+0093     <span class="string">'EqtNameFun'</span>,<span class="string">'VarNameFun'</span>,<span class="string">'PbName'</span>,<span class="string">'MPSfilename'</span>};
+0094 parameters = <span class="string">''</span>;
+0095 <span class="keyword">if</span> nargin ~=1
+0096     <span class="keyword">if</span> mod(length(varargin),2)==0
+0097         <span class="keyword">for</span> i=1:2:length(varargin)-1
+0098             <span class="keyword">if</span> ismember(varargin{i},optParamNames)
+0099                 parameters.(varargin{i}) = varargin{i+1};
+0100             <span class="keyword">else</span>
+0101                 error([varargin{i} <span class="string">' is not a valid optional parameter'</span>]);
+0102             <span class="keyword">end</span>
+0103         <span class="keyword">end</span>
+0104     <span class="keyword">elseif</span> strcmp(varargin{1},<span class="string">'default'</span>)
+0105         parameters = <span class="string">'default'</span>;
+0106     <span class="keyword">elseif</span> isstruct(varargin{1})
+0107         parameters = varargin{1};
+0108     <span class="keyword">else</span>
+0109         display(<span class="string">'Warning: Invalid number of parameters/values'</span>)
+0110         solution=[];
+0111         <span class="keyword">return</span>;
+0112     <span class="keyword">end</span>
+0113 <span class="keyword">end</span>
+0114 [minNorm, printLevel, primalOnlyFlag, saveInput, feasTol, optTol] = <span class="keyword">...</span>
+0115     <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'LP'</span>,optParamNames(1:6),parameters);
+0116 
+0117 
+0118 <span class="comment">%Save Input if selected</span>
+0119 <span class="keyword">if</span> ~isempty(saveInput)
+0120     fileName = parameters.saveInput;
+0121     <span class="keyword">if</span> ~find(regexp(fileName,<span class="string">'.mat'</span>))
+0122         fileName = [fileName <span class="string">'.mat'</span>];
+0123     <span class="keyword">end</span>
+0124     display([<span class="string">'Saving LPproblem in '</span> fileName]);
+0125     save(fileName,<span class="string">'LPproblem'</span>)
+0126 <span class="keyword">end</span>
+0127 
 0128 
-0129 <span class="comment">% if any(any(~isfinite(A)))</span>
-0130 <span class="comment">%     error('Cannot perform LP on a stoichiometric matrix with NaN of Inf coefficents.')</span>
-0131 <span class="comment">% end</span>
-0132 
-0133 <span class="comment">% Defaults in case the solver does not return anything</span>
-0134 f = [];
-0135 x = [];
-0136 y = [];
-0137 w = [];
-0138 origStat = -99;
-0139 stat = -99;
-0140 
-0141 t_start = clock;
-0142 <span class="keyword">switch</span> solver
-0143     <span class="comment">%% GLPK</span>
-0144     <span class="keyword">case</span> <span class="string">'glpk'</span>
-0145         params.msglev = printLevel; <span class="comment">% level of verbosity</span>
-0146         params.tolbnd = feasTol; <span class="comment">%tolerance</span>
-0147         params.toldj = optTol; <span class="comment">%tolerance</span>
-0148         <span class="keyword">if</span> (isempty(csense))
-0149             clear csense
-0150             csense(1:length(b),1) = <span class="string">'S'</span>;
-0151         <span class="keyword">else</span>
-0152             csense(csense == <span class="string">'L'</span>) = <span class="string">'U'</span>;
-0153             csense(csense == <span class="string">'G'</span>) = <span class="string">'L'</span>;
-0154             csense(csense == <span class="string">'E'</span>) = <span class="string">'S'</span>;
-0155             csense = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(csense);
-0156         <span class="keyword">end</span>
-0157         <span class="comment">%glpk needs b to be full, not sparse -Ronan</span>
-0158         b=full(b);
-0159         [x,f,y,w,stat,origStat] = <a href="#_sub1" class="code" title="subfunction [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params)">solveGlpk</a>(c,A,b,lb,ub,csense,osense,params);
-0160 
-0161     <span class="keyword">case</span> {<span class="string">'lindo_new'</span>,<span class="string">'lindo_old'</span>}
-0162         <span class="comment">%% LINDO</span>
-0163         <span class="keyword">if</span> (strcmp(solver,<span class="string">'lindo_new'</span>))
-0164             <span class="comment">% Use new API (&gt;= 2.0)</span>
-0165             [f,x,y,w,s,origStat] = <a href="solveCobraLPLindo.html" class="code" title="function [obj,x,y,w,s,solStatus] = solveCobraLPLindo(A,b,c,csense,lb,ub,osense,primalOnlyFlag,oldAPIFlag,verbLevel,method)">solveCobraLPLindo</a>(A,b,c,csense,lb,ub,osense,primalOnlyFlag,false);
-0166             <span class="comment">% Note that status handling may change (see Lindo.h)</span>
-0167             <span class="keyword">if</span> (origStat == 1 || origStat == 2)
-0168                 stat = 1; <span class="comment">% Optimal solution found</span>
-0169             <span class="keyword">elseif</span> (origStat == 4)
-0170                 stat = 2; <span class="comment">% Unbounded</span>
-0171             <span class="keyword">elseif</span> (origStat == 3 || origStat == 6)
-0172                 stat = 0; <span class="comment">% Infeasible</span>
-0173             <span class="keyword">else</span>
-0174                 stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
-0175             <span class="keyword">end</span>
-0176         <span class="keyword">else</span>
-0177             <span class="comment">% Use old API</span>
-0178             [f,x,y,w,s,origStat] = <a href="solveCobraLPLindo.html" class="code" title="function [obj,x,y,w,s,solStatus] = solveCobraLPLindo(A,b,c,csense,lb,ub,osense,primalOnlyFlag,oldAPIFlag,verbLevel,method)">solveCobraLPLindo</a>(A,b,c,csense,lb,ub,osense,primalOnlyFlag,true);
-0179             <span class="comment">% Note that status handling may change (see Lindo.h)</span>
-0180             <span class="keyword">if</span> (origStat == 2 || origStat == 3)
-0181                 stat = 1; <span class="comment">% Optimal solution found</span>
-0182             <span class="keyword">elseif</span> (origStat == 5)
-0183                 stat = 2; <span class="comment">% Unbounded</span>
-0184             <span class="keyword">elseif</span> (origStat == 4 || origStat == 6)
-0185                 stat = 0; <span class="comment">% Infeasible</span>
-0186             <span class="keyword">else</span>
-0187                 stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
-0188             <span class="keyword">end</span>
-0189         <span class="keyword">end</span>
-0190         <span class="comment">%[f,x,y,s,w,stat] = LMSolveLPNew(A,b,c,csense,lb,ub,osense,0);</span>
-0191 
-0192     <span class="keyword">case</span> <span class="string">'lp_solve'</span>
-0193         <span class="comment">%% lp_solve</span>
-0194         <span class="keyword">if</span> (isempty(csense))
-0195             [f,x,y,origStat] = <a href="lp_solve.html" class="code" title="function [obj, x, duals, stat] = lp_solve(f, a, b, e, vlb, vub, xint, scalemode, keep)">lp_solve</a>(c*(-osense),A,b,zeros(size(A,1),1),lb,ub);
-0196             f = f*(-osense);
-0197         <span class="keyword">else</span>
-0198             e(csense == <span class="string">'E'</span>) = 0;
-0199             e(csense == <span class="string">'G'</span>) = 1;
-0200             e(csense == <span class="string">'L'</span>) = -1;
-0201             [f,x,y,origStat] = <a href="lp_solve.html" class="code" title="function [obj, x, duals, stat] = lp_solve(f, a, b, e, vlb, vub, xint, scalemode, keep)">lp_solve</a>(c*(-osense),A,b,e,lb,ub);
-0202             f = f*(-osense);
-0203         <span class="keyword">end</span>
-0204         <span class="comment">% Note that status handling may change (see lp_lib.h)</span>
-0205         <span class="keyword">if</span> (origStat == 0)
-0206             stat = 1; <span class="comment">% Optimal solution found</span>
-0207         <span class="keyword">elseif</span> (origStat == 3)
-0208             stat = 2; <span class="comment">% Unbounded</span>
-0209         <span class="keyword">elseif</span> (origStat == 2)
-0210             stat = 0; <span class="comment">% Infeasible</span>
-0211         <span class="keyword">else</span>
-0212             stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
-0213         <span class="keyword">end</span>
-0214         s = [];
-0215         w = [];
-0216     <span class="keyword">case</span> <span class="string">'mosek'</span>
-0217         <span class="comment">%% mosek</span>
-0218         <span class="comment">%if mosek is installed, and the paths are added ahead of matlab's</span>
-0219         <span class="comment">%built in paths, then mosek linprog shaddows matlab linprog and</span>
-0220         <span class="comment">%is used preferentially</span>
-0221         <span class="keyword">switch</span> printLevel
-0222             <span class="keyword">case</span> 0
-0223                options.Display=<span class="string">'off'</span>;
-0224             <span class="keyword">case</span> 1
-0225                 options.Display=<span class="string">'final'</span>;
-0226             <span class="keyword">case</span> 2
-0227                 options.Display=<span class="string">'iter'</span>;
-0228             <span class="keyword">otherwise</span>
-0229                 <span class="comment">% Ask for default options for a function.</span>
-0230                 options  = optimset;
-0231         <span class="keyword">end</span>
-0232                      
-0233         <span class="keyword">if</span> (isempty(csense))
-0234             [x,f,origStat,output,lambda] = linprog(c*osense,[],[],A,b,lb,ub,[],options);
-0235         <span class="keyword">else</span>
-0236             Aeq = A(csense == <span class="string">'E'</span>,:);
-0237             beq = b(csense == <span class="string">'E'</span>);
-0238             Ag = A(csense == <span class="string">'G'</span>,:);
-0239             bg = b(csense == <span class="string">'G'</span>);
-0240             Al = A(csense == <span class="string">'L'</span>,:);
-0241             bl = b(csense == <span class="string">'L'</span>);
-0242             clear A;
-0243             A = [Al;-Ag];
-0244             clear b;
-0245             b = [bl;-bg];
-0246             [x,f,origStat,output,lambda] = linprog(c*osense,A,b,Aeq,beq,lb,ub,[],options);
-0247         <span class="keyword">end</span>
-0248         y = [];
-0249         <span class="keyword">if</span> (origStat &gt; 0)
-0250             stat = 1; <span class="comment">% Optimal solution found</span>
-0251             f = f*osense;
-0252             y = lambda.eqlin;
-0253         <span class="keyword">elseif</span> (origStat &lt; 0)
-0254             stat = 0; <span class="comment">% Infeasible</span>
-0255         <span class="keyword">else</span>
-0256             stat = -1; <span class="comment">% Solution did not converge</span>
-0257         <span class="keyword">end</span>
-0258         
-0259     <span class="keyword">case</span> <span class="string">'gurobi'</span>
-0260         <span class="comment">%% gurobi</span>
-0261         <span class="comment">% Free academic licenses for the Gurobi solver can be obtained from</span>
-0262         <span class="comment">% http://www.gurobi.com/html/academic.html</span>
-0263         <span class="comment">%</span>
-0264         <span class="comment">% The code below uses Gurobi Mex to interface with Gurobi. It can be downloaded from</span>
-0265         <span class="comment">% http://www.convexoptimization.com/wikimization/index.php/Gurobi_Mex:_A_MATLAB_interface_for_Gurobi</span>
-0266 
-0267         clear opts            <span class="comment">% Use the default parameter settings</span>
-0268         <span class="keyword">if</span> printLevel == 0
-0269            <span class="comment">% Version v1.10 of Gurobi Mex has a minor bug. For complete silence</span>
-0270            <span class="comment">% Remove Line 736 of gurobi_mex.c: mexPrintf(&quot;\n&quot;);</span>
-0271            opts.Display = 0;
-0272            opts.DisplayInterval = 0;
-0273         <span class="keyword">else</span>
-0274            opts.Display = 1;
-0275         <span class="keyword">end</span>
-0276 
-0277         opts.FeasibilityTol = feasTol;
-0278         opts.OptimalityTol = optTol;
-0279         
-0280         <span class="keyword">if</span> (isempty(csense))
-0281             clear csense
-0282             csense(1:length(b),1) = <span class="string">'='</span>;
-0283         <span class="keyword">else</span>
-0284             csense(csense == <span class="string">'L'</span>) = <span class="string">'&lt;'</span>;
-0285             csense(csense == <span class="string">'G'</span>) = <span class="string">'&gt;'</span>;
-0286             csense(csense == <span class="string">'E'</span>) = <span class="string">'='</span>;
-0287             csense = csense(:);
-0288         <span class="keyword">end</span>
-0289     <span class="comment">%gurobi_mex doesn't cast logicals to doubles automatically</span>
-0290     c = double(c);
-0291         [x,f,origStat,output,y] = gurobi_mex(c,osense,sparse(A),b, <span class="keyword">...</span>
-0292                                              csense,lb,ub,[],opts);
-0293         <span class="keyword">if</span> origStat==2
-0294            stat = 1; <span class="comment">% Optimal solutuion found</span>
-0295         <span class="keyword">elseif</span> origStat==3
-0296            stat = 0; <span class="comment">% Infeasible</span>
-0297         <span class="keyword">elseif</span> origStat==5
-0298            stat = 2; <span class="comment">% Unbounded</span>
-0299         <span class="keyword">elseif</span> origStat==4
-0300            stat = 0; <span class="comment">% Gurobi reports infeasible *or* unbounded</span>
-0301         <span class="keyword">else</span>
-0302            stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
-0303         <span class="keyword">end</span>
-0304 
-0305     <span class="keyword">case</span> <span class="string">'matlab'</span>
-0306         <span class="comment">%matlab is not a reliable LP solver</span>
-0307         <span class="keyword">if</span> (isempty(csense))
-0308             [x,f,origStat,output,lambda] = linprog(c*osense,[],[],A,b,lb,ub);
-0309         <span class="keyword">else</span>
-0310             Aeq = A(csense == <span class="string">'E'</span>,:);
-0311             beq = b(csense == <span class="string">'E'</span>);
-0312             Ag = A(csense == <span class="string">'G'</span>,:);
-0313             bg = b(csense == <span class="string">'G'</span>);
-0314             Al = A(csense == <span class="string">'L'</span>,:);
-0315             bl = b(csense == <span class="string">'L'</span>);
-0316             clear A;
-0317             A = [Al;-Ag];
-0318             clear b;
-0319             b = [bl;-bg];
-0320             [x,f,origStat,output,lambda] = linprog(c*osense,A,b,Aeq,beq,lb,ub);
+0129 [A,b,c,lb,ub,csense,osense] = deal(LPproblem.A,LPproblem.b,LPproblem.c,LPproblem.lb,LPproblem.ub,LPproblem.csense,LPproblem.osense);
+0130 
+0131 <span class="comment">% if any(any(~isfinite(A)))</span>
+0132 <span class="comment">%     error('Cannot perform LP on a stoichiometric matrix with NaN of Inf coefficents.')</span>
+0133 <span class="comment">% end</span>
+0134 
+0135 <span class="comment">% Defaults in case the solver does not return anything</span>
+0136 f = [];
+0137 x = [];
+0138 y = [];
+0139 w = [];
+0140 origStat = -99;
+0141 stat = -99;
+0142 
+0143 t_start = clock;
+0144 <span class="keyword">switch</span> solver
+0145     <span class="comment">%% GLPK</span>
+0146     <span class="keyword">case</span> <span class="string">'glpk'</span>
+0147         params.msglev = printLevel; <span class="comment">% level of verbosity</span>
+0148         params.tolbnd = feasTol; <span class="comment">%tolerance</span>
+0149         params.toldj = optTol; <span class="comment">%tolerance</span>
+0150         <span class="keyword">if</span> (isempty(csense))
+0151             clear csense
+0152             csense(1:length(b),1) = <span class="string">'S'</span>;
+0153         <span class="keyword">else</span>
+0154             csense(csense == <span class="string">'L'</span>) = <span class="string">'U'</span>;
+0155             csense(csense == <span class="string">'G'</span>) = <span class="string">'L'</span>;
+0156             csense(csense == <span class="string">'E'</span>) = <span class="string">'S'</span>;
+0157             csense = <a href="../../cobra/tools/columnVector.html" class="code" title="function vec = columnVector(vec)">columnVector</a>(csense);
+0158         <span class="keyword">end</span>
+0159         <span class="comment">%glpk needs b to be full, not sparse -Ronan</span>
+0160         b=full(b);
+0161         [x,f,y,w,stat,origStat] = <a href="#_sub1" class="code" title="subfunction [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params)">solveGlpk</a>(c,A,b,lb,ub,csense,osense,params);
+0162 
+0163     <span class="keyword">case</span> {<span class="string">'lindo_new'</span>,<span class="string">'lindo_old'</span>}
+0164         <span class="comment">%% LINDO</span>
+0165         <span class="keyword">if</span> (strcmp(solver,<span class="string">'lindo_new'</span>))
+0166             <span class="comment">% Use new API (&gt;= 2.0)</span>
+0167             [f,x,y,w,s,origStat] = <a href="solveCobraLPLindo.html" class="code" title="function [obj,x,y,w,s,solStatus] = solveCobraLPLindo(A,b,c,csense,lb,ub,osense,primalOnlyFlag,oldAPIFlag,verbLevel,method)">solveCobraLPLindo</a>(A,b,c,csense,lb,ub,osense,primalOnlyFlag,false);
+0168             <span class="comment">% Note that status handling may change (see Lindo.h)</span>
+0169             <span class="keyword">if</span> (origStat == 1 || origStat == 2)
+0170                 stat = 1; <span class="comment">% Optimal solution found</span>
+0171             <span class="keyword">elseif</span> (origStat == 4)
+0172                 stat = 2; <span class="comment">% Unbounded</span>
+0173             <span class="keyword">elseif</span> (origStat == 3 || origStat == 6)
+0174                 stat = 0; <span class="comment">% Infeasible</span>
+0175             <span class="keyword">else</span>
+0176                 stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0177             <span class="keyword">end</span>
+0178         <span class="keyword">else</span>
+0179             <span class="comment">% Use old API</span>
+0180             [f,x,y,w,s,origStat] = <a href="solveCobraLPLindo.html" class="code" title="function [obj,x,y,w,s,solStatus] = solveCobraLPLindo(A,b,c,csense,lb,ub,osense,primalOnlyFlag,oldAPIFlag,verbLevel,method)">solveCobraLPLindo</a>(A,b,c,csense,lb,ub,osense,primalOnlyFlag,true);
+0181             <span class="comment">% Note that status handling may change (see Lindo.h)</span>
+0182             <span class="keyword">if</span> (origStat == 2 || origStat == 3)
+0183                 stat = 1; <span class="comment">% Optimal solution found</span>
+0184             <span class="keyword">elseif</span> (origStat == 5)
+0185                 stat = 2; <span class="comment">% Unbounded</span>
+0186             <span class="keyword">elseif</span> (origStat == 4 || origStat == 6)
+0187                 stat = 0; <span class="comment">% Infeasible</span>
+0188             <span class="keyword">else</span>
+0189                 stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0190             <span class="keyword">end</span>
+0191         <span class="keyword">end</span>
+0192         <span class="comment">%[f,x,y,s,w,stat] = LMSolveLPNew(A,b,c,csense,lb,ub,osense,0);</span>
+0193 
+0194     <span class="keyword">case</span> <span class="string">'lp_solve'</span>
+0195         <span class="comment">%% lp_solve</span>
+0196         <span class="keyword">if</span> (isempty(csense))
+0197             [f,x,y,origStat] = <a href="lp_solve.html" class="code" title="function [obj, x, duals, stat] = lp_solve(f, a, b, e, vlb, vub, xint, scalemode, keep)">lp_solve</a>(c*(-osense),A,b,zeros(size(A,1),1),lb,ub);
+0198             f = f*(-osense);
+0199         <span class="keyword">else</span>
+0200             e(csense == <span class="string">'E'</span>) = 0;
+0201             e(csense == <span class="string">'G'</span>) = 1;
+0202             e(csense == <span class="string">'L'</span>) = -1;
+0203             [f,x,y,origStat] = <a href="lp_solve.html" class="code" title="function [obj, x, duals, stat] = lp_solve(f, a, b, e, vlb, vub, xint, scalemode, keep)">lp_solve</a>(c*(-osense),A,b,e,lb,ub);
+0204             f = f*(-osense);
+0205         <span class="keyword">end</span>
+0206         <span class="comment">% Note that status handling may change (see lp_lib.h)</span>
+0207         <span class="keyword">if</span> (origStat == 0)
+0208             stat = 1; <span class="comment">% Optimal solution found</span>
+0209         <span class="keyword">elseif</span> (origStat == 3)
+0210             stat = 2; <span class="comment">% Unbounded</span>
+0211         <span class="keyword">elseif</span> (origStat == 2)
+0212             stat = 0; <span class="comment">% Infeasible</span>
+0213         <span class="keyword">else</span>
+0214             stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0215         <span class="keyword">end</span>
+0216         s = [];
+0217         w = [];
+0218     <span class="keyword">case</span> <span class="string">'mosek'</span>
+0219         <span class="comment">%% mosek</span>
+0220         <span class="comment">%if mosek is installed, and the paths are added ahead of matlab's</span>
+0221         <span class="comment">%built in paths, then mosek linprog shaddows matlab linprog and</span>
+0222         <span class="comment">%is used preferentially</span>
+0223         <span class="keyword">switch</span> printLevel
+0224             <span class="keyword">case</span> 0
+0225                options.Display=<span class="string">'off'</span>;
+0226             <span class="keyword">case</span> 1
+0227                 options.Display=<span class="string">'final'</span>;
+0228             <span class="keyword">case</span> 2
+0229                 options.Display=<span class="string">'iter'</span>;
+0230             <span class="keyword">otherwise</span>
+0231                 <span class="comment">% Ask for default options for a function.</span>
+0232                 options  = optimset;
+0233         <span class="keyword">end</span>
+0234                      
+0235         <span class="keyword">if</span> (isempty(csense))
+0236             [x,f,origStat,output,lambda] = linprog(c*osense,[],[],A,b,lb,ub,[],options);
+0237         <span class="keyword">else</span>
+0238             Aeq = A(csense == <span class="string">'E'</span>,:);
+0239             beq = b(csense == <span class="string">'E'</span>);
+0240             Ag = A(csense == <span class="string">'G'</span>,:);
+0241             bg = b(csense == <span class="string">'G'</span>);
+0242             Al = A(csense == <span class="string">'L'</span>,:);
+0243             bl = b(csense == <span class="string">'L'</span>);
+0244             clear A;
+0245             A = [Al;-Ag];
+0246             clear b;
+0247             b = [bl;-bg];
+0248             [x,f,origStat,output,lambda] = linprog(c*osense,A,b,Aeq,beq,lb,ub,[],options);
+0249         <span class="keyword">end</span>
+0250         y = [];
+0251         <span class="keyword">if</span> (origStat &gt; 0)
+0252             stat = 1; <span class="comment">% Optimal solution found</span>
+0253             f = f*osense;
+0254             y = lambda.eqlin;
+0255         <span class="keyword">elseif</span> (origStat &lt; 0)
+0256             stat = 0; <span class="comment">% Infeasible</span>
+0257         <span class="keyword">else</span>
+0258             stat = -1; <span class="comment">% Solution did not converge</span>
+0259         <span class="keyword">end</span>
+0260         
+0261     <span class="keyword">case</span> <span class="string">'gurobi'</span>
+0262         <span class="comment">%% gurobi</span>
+0263         <span class="comment">% Free academic licenses for the Gurobi solver can be obtained from</span>
+0264         <span class="comment">% http://www.gurobi.com/html/academic.html</span>
+0265         <span class="comment">%</span>
+0266         <span class="comment">% The code below uses Gurobi Mex to interface with Gurobi. It can be downloaded from</span>
+0267         <span class="comment">% http://www.convexoptimization.com/wikimization/index.php/Gurobi_Mex:_A_MATLAB_interface_for_Gurobi</span>
+0268 
+0269         clear opts            <span class="comment">% Use the default parameter settings</span>
+0270         <span class="keyword">if</span> printLevel == 0
+0271            <span class="comment">% Version v1.10 of Gurobi Mex has a minor bug. For complete silence</span>
+0272            <span class="comment">% Remove Line 736 of gurobi_mex.c: mexPrintf(&quot;\n&quot;);</span>
+0273            opts.Display = 0;
+0274            opts.DisplayInterval = 0;
+0275         <span class="keyword">else</span>
+0276            opts.Display = 1;
+0277         <span class="keyword">end</span>
+0278 
+0279         opts.FeasibilityTol = feasTol;
+0280         opts.OptimalityTol = optTol;
+0281         
+0282         <span class="keyword">if</span> (isempty(csense))
+0283             clear csense
+0284             csense(1:length(b),1) = <span class="string">'='</span>;
+0285         <span class="keyword">else</span>
+0286             csense(csense == <span class="string">'L'</span>) = <span class="string">'&lt;'</span>;
+0287             csense(csense == <span class="string">'G'</span>) = <span class="string">'&gt;'</span>;
+0288             csense(csense == <span class="string">'E'</span>) = <span class="string">'='</span>;
+0289             csense = csense(:);
+0290         <span class="keyword">end</span>
+0291     <span class="comment">%gurobi_mex doesn't cast logicals to doubles automatically</span>
+0292     c = double(c);
+0293         [x,f,origStat,output,y] = gurobi_mex(c,osense,sparse(A),b, <span class="keyword">...</span>
+0294                                              csense,lb,ub,[],opts);
+0295         <span class="keyword">if</span> origStat==2
+0296            stat = 1; <span class="comment">% Optimal solutuion found</span>
+0297         <span class="keyword">elseif</span> origStat==3
+0298            stat = 0; <span class="comment">% Infeasible</span>
+0299         <span class="keyword">elseif</span> origStat==5
+0300            stat = 2; <span class="comment">% Unbounded</span>
+0301         <span class="keyword">elseif</span> origStat==4
+0302            stat = 0; <span class="comment">% Gurobi reports infeasible *or* unbounded</span>
+0303         <span class="keyword">else</span>
+0304            stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0305         <span class="keyword">end</span>
+0306         
+0307     <span class="keyword">case</span> <span class="string">'gurobi5'</span>
+0308         <span class="comment">%% gurobi 5</span>
+0309         <span class="comment">% Free academic licenses for the Gurobi solver can be obtained from</span>
+0310         <span class="comment">% http://www.gurobi.com/html/academic.html</span>
+0311         resultgurobi = struct(<span class="string">'x'</span>,[],<span class="string">'objval'</span>,[],<span class="string">'pi'</span>,[]);
+0312         LPproblem.A = deal(sparse(LPproblem.A));
+0313         clear params            <span class="comment">% Use the default parameter settings</span>
+0314         
+0315         <span class="keyword">if</span> printLevel == 0 
+0316            params.OutputFlag = 0;
+0317            params.DisplayInterval = 1;
+0318         <span class="keyword">else</span>
+0319            params.OutputFlag = 1;
+0320            params.DisplayInterval = 5;
 0321         <span class="keyword">end</span>
-0322         y = [];
-0323         <span class="keyword">if</span> (origStat &gt; 0)
-0324             stat = 1; <span class="comment">% Optimal solution found</span>
-0325             f = f*osense;
-0326             y = lambda.eqlin;
-0327         <span class="keyword">elseif</span> (origStat &lt; 0)
-0328             stat = 0; <span class="comment">% Infeasible</span>
+0322 
+0323         params.FeasibilityTol = feasTol;
+0324         params.OptimalityTol = optTol;
+0325         
+0326         <span class="keyword">if</span> (isempty(LPproblem.csense))
+0327             clear LPproblem.csense
+0328             LPproblem.csense(1:length(b),1) = <span class="string">'='</span>;
 0329         <span class="keyword">else</span>
-0330             stat = -1; <span class="comment">% Solution did not converge</span>
-0331         <span class="keyword">end</span>
-0332 
-0333     <span class="keyword">case</span> <span class="string">'tomlab_cplex'</span>
-0334         <span class="comment">%% Tomlab</span>
-0335         <span class="keyword">if</span> (~isempty(csense))
-0336             b_L(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
-0337             b_U(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
-0338             b_L(csense == <span class="string">'G'</span>) = b(csense == <span class="string">'G'</span>);
-0339             b_U(csense == <span class="string">'G'</span>) = 1e6;
-0340             b_L(csense == <span class="string">'L'</span>) = -1e6;
-0341             b_U(csense == <span class="string">'L'</span>) = b(csense == <span class="string">'L'</span>);
-0342         <span class="keyword">else</span>
-0343             b_L = b;
-0344             b_U = b;
-0345         <span class="keyword">end</span>
-0346         tomlabProblem = lpAssign(osense*c,A,b_L,b_U,lb,ub);
-0347         <span class="comment">%Result = tomRun('cplex', tomlabProblem, 0);</span>
-0348         <span class="comment">% This is faster than using tomRun</span>
-0349         
-0350         <span class="comment">%set parameters</span>
-0351         tomlabProblem.optParam = optParamDef(<span class="string">'cplex'</span>,tomlabProblem.probType);
-0352         tomlabProblem.QP.F = [];
-0353         tomlabProblem.PriLevOpt = printLevel;
-0354         
-0355         <span class="comment">%if basis is availible use it</span>
-0356         <span class="keyword">if</span> isfield(LPproblem,<span class="string">'basis'</span>) &amp;&amp; ~isempty(LPproblem.basis)
-0357             tomlabProblem.MIP.basis = LPproblem.basis;
-0358         <span class="keyword">end</span>
-0359         
-0360         <span class="comment">%set tolerance</span>
-0361         tomlabProblem.MIP.cpxControl.EPRHS = feasTol;
-0362         tomlabProblem.MIP.cpxControl.EPOPT = optTol;
-0363         
-0364         <span class="comment">%solve</span>
-0365         Result = cplexTL(tomlabProblem);
-0366 
-0367         <span class="comment">% Assign results</span>
-0368         x = Result.x_k;
-0369         f = osense*sum(tomlabProblem.QP.c.*Result.x_k);
-0370         <span class="comment">%        [Result.f_k f]</span>
-0371 
-0372         origStat = Result.Inform;
-0373         w = Result.v_k(1:length(lb));
-0374         y = Result.v_k((length(lb)+1):end);
-0375         basis = Result.MIP.basis;
-0376         <span class="keyword">if</span> (origStat == 1)
-0377             stat = 1;
-0378         <span class="keyword">elseif</span> (origStat == 3)
-0379             stat = 0;
-0380         <span class="keyword">elseif</span> (origStat == 2 || origStat == 4)
-0381             stat = 2;
-0382         <span class="keyword">else</span>
-0383             stat = -1;
-0384         <span class="keyword">end</span>
-0385     <span class="keyword">case</span> <span class="string">'cplex_direct'</span>
-0386         <span class="comment">%% Tomlab cplex.m direct</span>
-0387         <span class="comment">%Used with the current script, only some of the control affoarded with</span>
-0388         <span class="comment">%this interface is provided. Primarily, this is to change the print</span>
-0389         <span class="comment">%level and whether to minimise the Euclidean Norm of the internal</span>
-0390         <span class="comment">%fluxes or not.</span>
-0391         <span class="comment">%See solveCobraLPCPLEX.m for more refined control of cplex</span>
-0392         <span class="comment">%Ronan Fleming 11/12/2008</span>
-0393         <span class="keyword">if</span> isfield(LPproblem,<span class="string">'basis'</span>) &amp;&amp; ~isempty(LPproblem.basis)
-0394             LPproblem.LPBasis = LPproblem.basis;
-0395         <span class="keyword">end</span>
-0396         [solution LPprob] = <a href="solveCobraLPCPLEX.html" class="code" title="function [solution,LPProblem]=solveCobraLPCPLEX(LPProblem,printLevel,basisReuse,conflictResolve,contFunctName,minNorm)">solveCobraLPCPLEX</a>(LPproblem,printLevel,1,[],[],minNorm);
-0397         solution.basis = LPprob.LPBasis;
-0398         solution.solver = solver;
-0399 
-0400     <span class="keyword">case</span> <span class="string">'lindo'</span>
-0401         error(<span class="string">'Solver type lindo is obsolete - use lindo_new or lindo_old instead'</span>);
-0402     <span class="keyword">case</span> <span class="string">'pdco'</span>
-0403         <span class="comment">%-----------------------------------------------------------------------</span>
-0404         <span class="comment">% pdco.m: Primal-Dual Barrier Method for Convex Objectives (16 Dec 2008)</span>
-0405         <span class="comment">%-----------------------------------------------------------------------</span>
-0406         <span class="comment">% AUTHOR:</span>
-0407         <span class="comment">%    Michael Saunders, Systems Optimization Laboratory (SOL),</span>
-0408         <span class="comment">%    Stanford University, Stanford, California, USA.</span>
-0409         <span class="comment">%Interfaced with Cobra toolbox by Ronan Fleming, 27 June 2009</span>
-0410         [nMet,nRxn]=size(LPproblem.A);
-0411         x0 = ones(nRxn,1);
-0412         y0 = ones(nMet,1);
-0413         z0 = ones(nRxn,1);
-0414  
-0415         <span class="comment">%setting d1 to zero is dangerous numerically, but is necessary to avoid</span>
-0416         <span class="comment">%minimising the Euclidean norm of the optimal flux. A more</span>
-0417         <span class="comment">%numerically stable way is to use pdco via solveCobraQP, which has</span>
-0418         <span class="comment">%a more reasonable d1 and should be more numerically robust. -Ronan</span>
-0419         d1=0; 
-0420         d2=1e-6;
-0421         options = pdcoSet;
-0422         options.FeaTol    = 1e-12;
-0423         options.OptTol    = 1e-12;
-0424         <span class="comment">%pdco is a general purpose convex optization solver, not only a</span>
-0425         <span class="comment">%linear optimization solver. As such, much control over the optimal</span>
-0426         <span class="comment">%solution and the method for solution is available. However, this</span>
-0427         <span class="comment">%also means you may have to tune the various parameters here,</span>
-0428         <span class="comment">%especially xsize and zsize (see pdco.m) to get the real optimal</span>
-0429         <span class="comment">%objective value</span>
-0430         xsize = 1000;
-0431         zsize = 10000;
-0432         
-0433         options.Method=2; <span class="comment">%QR</span>
-0434         options.MaxIter=100;
-0435         options.Print=printLevel;
-0436         [x,y,w,inform,PDitns,CGitns,time] = <span class="keyword">...</span>
-0437             pdco(osense*c*10000,A,b,lb,ub,d1,d2,options,x0,y0,z0,xsize,zsize);
-0438         f= c'*x;
-0439         <span class="comment">% inform = 0 if a solution is found;</span>
-0440 <span class="comment">%        = 1 if too many iterations were required;</span>
-0441 <span class="comment">%        = 2 if the linesearch failed too often;</span>
-0442 <span class="comment">%        = 3 if the step lengths became too small;</span>
-0443 <span class="comment">%        = 4 if Cholesky said ADDA was not positive definite.</span>
-0444         <span class="keyword">if</span> (inform == 0)
-0445             stat = 1;
-0446         <span class="keyword">elseif</span> (inform == 1 || inform == 2 || inform == 3)
-0447             stat = 0;
-0448         <span class="keyword">else</span>
-0449             stat = -1;
-0450         <span class="keyword">end</span>
-0451         origStat=inform;
-0452     <span class="keyword">case</span> <span class="string">'mps'</span>
-0453         <span class="comment">%% BuildMPS</span>
-0454         <span class="comment">% This calls buildMPS and generates a MPS format description of the</span>
-0455         <span class="comment">% problem as the result</span>
-0456         <span class="comment">% Build MPS Author: Bruno Luong</span>
-0457         <span class="comment">% Interfaced with CobraToolbox by Richard Que (12/18/09)</span>
-0458         display(<span class="string">'Solver set to MPS. This function will output an MPS matrix string for the LP problem'</span>);
-0459         <span class="comment">%Get optional parameters</span>
-0460         [EleNames,EqtNames,VarNames,EleNameFun,EqtNameFun,VarNameFun,PbName,MPSfilename] = <span class="keyword">...</span>
-0461             <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'LP'</span>,{<span class="string">'EleNames'</span>,<span class="string">'EqtNames'</span>,<span class="string">'VarNames'</span>,<span class="string">'EleNameFun'</span>,<span class="string">'EqtNameFun'</span>,<span class="string">'VarNameFun'</span>,<span class="string">'PbName'</span>,<span class="string">'MPSfilename'</span>},parameters);
-0462         <span class="comment">%split A matrix for L and E csense</span>
-0463         Ale = A(csense==<span class="string">'L'</span>,:);
-0464         ble = b(csense==<span class="string">'L'</span>);
-0465         Aeq = A(csense==<span class="string">'E'</span>,:);
-0466         beq = b(csense==<span class="string">'E'</span>);
-0467         
-0468         <span class="comment">%%%%Adapted from BuildMPS%%%%%</span>
-0469         [neq nvar]=size(Aeq);
-0470         nle=size(Ale,1);
-0471         <span class="keyword">if</span> isempty(EleNames)
-0472             EleNames=arrayfun(EleNameFun,(1:nle),<span class="string">'UniformOutput'</span>, false);
-0473         <span class="keyword">end</span>
-0474         <span class="keyword">if</span> isempty(EqtNames)
-0475             EqtNames=arrayfun(EqtNameFun,(1:neq),<span class="string">'UniformOutput'</span>, false);
-0476         <span class="keyword">end</span>
-0477         <span class="keyword">if</span> isempty(VarNames)
-0478             VarNames=arrayfun(VarNameFun,(1:nvar),<span class="string">'UniformOutput'</span>, false);
-0479         <span class="keyword">end</span>
-0480         <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
-0481         
-0482         [solution] = <a href="../../cobra/external/BuildMPS/BuildMPS.html" class="code" title="function [Contain OK]=BuildMPS(A, b, Aeq, beq, cost, L, U, PbName, varargin)">BuildMPS</a>(Ale, ble, Aeq, beq, c, lb, ub, PbName,<span class="string">'MPSfilename'</span>,MPSfilename,<span class="string">'EleNames'</span>,EleNames,<span class="string">'EqtNames'</span>,EqtNames,<span class="string">'VarNames'</span>,VarNames);
-0483         
-0484         
-0485     <span class="keyword">otherwise</span>
-0486         error([<span class="string">'Unknown solver: '</span> solver]);
-0487         
-0488 <span class="keyword">end</span>
-0489 <span class="keyword">if</span> ~strcmp(solver,<span class="string">'cplex_direct'</span>) &amp;&amp; ~strcmp(solver,<span class="string">'mps'</span>)
-0490     <span class="comment">%% Assign solution</span>
-0491     t = etime(clock, t_start);
-0492     <span class="keyword">if</span> ~exist(<span class="string">'basis'</span>,<span class="string">'var'</span>), basis=[]; <span class="keyword">end</span>
-0493     [solution.full,solution.obj,solution.rcost,solution.dual,solution.solver,solution.stat,solution.origStat,solution.time,solution.basis] = <span class="keyword">...</span>
-0494         deal(x,f,w,y,solver,stat,origStat,t,basis);
-0495 <span class="keyword">end</span>
-0496 
-0497 <span class="comment">%% solveGlpk Solve actual LP problem using glpk and return relevant results</span>
-0498 <a name="_sub1" href="#_subfunctions" class="code">function [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params)</a>
-0499 
-0500 <span class="comment">% Old way of calling glpk</span>
-0501 <span class="comment">%[x,f,stat,extra] = glpkmex(osense,c,A,b,csense,lb,ub,[],params);</span>
-0502 [x,f,origStat,extra] = glpk(c,A,b,lb,ub,csense,[],osense,params);
-0503 y = extra.lambda;
-0504 w = extra.redcosts;
-0505 <span class="comment">% Note that status handling may change (see glplpx.h)</span>
-0506 <span class="keyword">if</span> (origStat == 180 || origStat == 5)
-0507     stat = 1; <span class="comment">% Optimal solution found</span>
-0508 <span class="keyword">elseif</span> (origStat == 182 || origStat == 183 || origStat == 3 || origStat == 110)
-0509     stat = 0; <span class="comment">% Infeasible</span>
-0510 <span class="keyword">elseif</span> (origStat == 184 || origStat == 6)
-0511     stat = 2; <span class="comment">% Unbounded</span>
-0512 <span class="keyword">else</span>
-0513     stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
-0514 <span class="keyword">end</span></pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+0330             LPproblem.csense(LPproblem.csense == <span class="string">'L'</span>) = <span class="string">'&lt;'</span>;
+0331             LPproblem.csense(LPproblem.csense == <span class="string">'G'</span>) = <span class="string">'&gt;'</span>;
+0332             LPproblem.csense(LPproblem.csense == <span class="string">'E'</span>) = <span class="string">'='</span>;
+0333             LPproblem.csense = LPproblem.csense(:);
+0334         <span class="keyword">end</span>
+0335     
+0336         <span class="keyword">if</span> LPproblem.osense == -1
+0337             LPproblem.osense = <span class="string">'max'</span>;
+0338         <span class="keyword">else</span>
+0339             LPproblem.osense = <span class="string">'min'</span>;
+0340         <span class="keyword">end</span>
+0341         
+0342         LPproblem.modelsense = LPproblem.osense;
+0343         [LPproblem.rhs,LPproblem.obj,LPproblem.sense] = deal(LPproblem.b,double(LPproblem.c),LPproblem.csense);
+0344         resultgurobi = gurobi(LPproblem,params);
+0345         
+0346         <span class="keyword">if</span> strcmp(resultgurobi.status,<span class="string">'OPTIMAL'</span>)
+0347            stat = 1; <span class="comment">% Optimal solution found</span>
+0348            [x,f,y] = deal(resultgurobi.x,resultgurobi.objval,resultgurobi.pi);
+0349         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'INFEASIBLE'</span>)
+0350            stat = 0; <span class="comment">% Infeasible</span>
+0351         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'UNBOUNDED'</span>)
+0352            stat = 2; <span class="comment">% Unbounded</span>
+0353         <span class="keyword">elseif</span> strcmp(resultgurobi.status,<span class="string">'INF_OR_UNBD'</span>)
+0354            stat = 0; <span class="comment">% Gurobi reports infeasible *or* unbounded</span>
+0355         <span class="keyword">else</span>
+0356            stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0357         <span class="keyword">end</span>
+0358         
+0359     <span class="keyword">case</span> <span class="string">'matlab'</span>
+0360         <span class="comment">%matlab is not a reliable LP solver</span>
+0361         <span class="keyword">if</span> (isempty(csense))
+0362             [x,f,origStat,output,lambda] = linprog(c*osense,[],[],A,b,lb,ub);
+0363         <span class="keyword">else</span>
+0364             Aeq = A(csense == <span class="string">'E'</span>,:);
+0365             beq = b(csense == <span class="string">'E'</span>);
+0366             Ag = A(csense == <span class="string">'G'</span>,:);
+0367             bg = b(csense == <span class="string">'G'</span>);
+0368             Al = A(csense == <span class="string">'L'</span>,:);
+0369             bl = b(csense == <span class="string">'L'</span>);
+0370             clear A;
+0371             A = [Al;-Ag];
+0372             clear b;
+0373             b = [bl;-bg];
+0374             [x,f,origStat,output,lambda] = linprog(c*osense,A,b,Aeq,beq,lb,ub);
+0375         <span class="keyword">end</span>
+0376         y = [];
+0377         <span class="keyword">if</span> (origStat &gt; 0)
+0378             stat = 1; <span class="comment">% Optimal solution found</span>
+0379             f = f*osense;
+0380             y = lambda.eqlin;
+0381         <span class="keyword">elseif</span> (origStat &lt; 0)
+0382             stat = 0; <span class="comment">% Infeasible</span>
+0383         <span class="keyword">else</span>
+0384             stat = -1; <span class="comment">% Solution did not converge</span>
+0385         <span class="keyword">end</span>
+0386 
+0387     <span class="keyword">case</span> <span class="string">'tomlab_cplex'</span>
+0388         <span class="comment">%% Tomlab</span>
+0389         <span class="keyword">if</span> (~isempty(csense))
+0390             b_L(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0391             b_U(csense == <span class="string">'E'</span>) = b(csense == <span class="string">'E'</span>);
+0392             b_L(csense == <span class="string">'G'</span>) = b(csense == <span class="string">'G'</span>);
+0393             b_U(csense == <span class="string">'G'</span>) = 1e6;
+0394             b_L(csense == <span class="string">'L'</span>) = -1e6;
+0395             b_U(csense == <span class="string">'L'</span>) = b(csense == <span class="string">'L'</span>);
+0396         <span class="keyword">else</span>
+0397             b_L = b;
+0398             b_U = b;
+0399         <span class="keyword">end</span>
+0400         tomlabProblem = lpAssign(osense*c,A,b_L,b_U,lb,ub);
+0401         <span class="comment">%Result = tomRun('cplex', tomlabProblem, 0);</span>
+0402         <span class="comment">% This is faster than using tomRun</span>
+0403         
+0404         <span class="comment">%set parameters</span>
+0405         tomlabProblem.optParam = optParamDef(<span class="string">'cplex'</span>,tomlabProblem.probType);
+0406         tomlabProblem.QP.F = [];
+0407         tomlabProblem.PriLevOpt = printLevel;
+0408         
+0409         <span class="comment">%if basis is availible use it</span>
+0410         <span class="keyword">if</span> isfield(LPproblem,<span class="string">'basis'</span>) &amp;&amp; ~isempty(LPproblem.basis)
+0411             tomlabProblem.MIP.basis = LPproblem.basis;
+0412         <span class="keyword">end</span>
+0413         
+0414         <span class="comment">%set tolerance</span>
+0415         tomlabProblem.MIP.cpxControl.EPRHS = feasTol;
+0416         tomlabProblem.MIP.cpxControl.EPOPT = optTol;
+0417         
+0418         <span class="comment">%solve</span>
+0419         Result = cplexTL(tomlabProblem);
+0420 
+0421         <span class="comment">% Assign results</span>
+0422         x = Result.x_k;
+0423         f = osense*sum(tomlabProblem.QP.c.*Result.x_k);
+0424         <span class="comment">%        [Result.f_k f]</span>
+0425 
+0426         origStat = Result.Inform;
+0427         w = Result.v_k(1:length(lb));
+0428         y = Result.v_k((length(lb)+1):end);
+0429         basis = Result.MIP.basis;
+0430         <span class="keyword">if</span> (origStat == 1)
+0431             stat = 1;
+0432         <span class="keyword">elseif</span> (origStat == 3)
+0433             stat = 0;
+0434         <span class="keyword">elseif</span> (origStat == 2 || origStat == 4)
+0435             stat = 2;
+0436         <span class="keyword">else</span>
+0437             stat = -1;
+0438         <span class="keyword">end</span>
+0439     <span class="keyword">case</span> <span class="string">'cplex_direct'</span>
+0440         <span class="comment">%% Tomlab cplex.m direct</span>
+0441         <span class="comment">%Used with the current script, only some of the control affoarded with</span>
+0442         <span class="comment">%this interface is provided. Primarily, this is to change the print</span>
+0443         <span class="comment">%level and whether to minimise the Euclidean Norm of the internal</span>
+0444         <span class="comment">%fluxes or not.</span>
+0445         <span class="comment">%See solveCobraLPCPLEX.m for more refined control of cplex</span>
+0446         <span class="comment">%Ronan Fleming 11/12/2008</span>
+0447         <span class="keyword">if</span> isfield(LPproblem,<span class="string">'basis'</span>) &amp;&amp; ~isempty(LPproblem.basis)
+0448             LPproblem.LPBasis = LPproblem.basis;
+0449         <span class="keyword">end</span>
+0450         [solution LPprob] = <a href="solveCobraLPCPLEX.html" class="code" title="function [solution,LPProblem]=solveCobraLPCPLEX(LPProblem,printLevel,basisReuse,conflictResolve,contFunctName,minNorm)">solveCobraLPCPLEX</a>(LPproblem,printLevel,1,[],[],minNorm);
+0451         solution.basis = LPprob.LPBasis;
+0452         solution.solver = solver;
+0453 
+0454     <span class="keyword">case</span> <span class="string">'lindo'</span>
+0455         error(<span class="string">'Solver type lindo is obsolete - use lindo_new or lindo_old instead'</span>);
+0456     <span class="keyword">case</span> <span class="string">'pdco'</span>
+0457         <span class="comment">%-----------------------------------------------------------------------</span>
+0458         <span class="comment">% pdco.m: Primal-Dual Barrier Method for Convex Objectives (16 Dec 2008)</span>
+0459         <span class="comment">%-----------------------------------------------------------------------</span>
+0460         <span class="comment">% AUTHOR:</span>
+0461         <span class="comment">%    Michael Saunders, Systems Optimization Laboratory (SOL),</span>
+0462         <span class="comment">%    Stanford University, Stanford, California, USA.</span>
+0463         <span class="comment">%Interfaced with Cobra toolbox by Ronan Fleming, 27 June 2009</span>
+0464         [nMet,nRxn]=size(LPproblem.A);
+0465         x0 = ones(nRxn,1);
+0466         y0 = ones(nMet,1);
+0467         z0 = ones(nRxn,1);
+0468  
+0469         <span class="comment">%setting d1 to zero is dangerous numerically, but is necessary to avoid</span>
+0470         <span class="comment">%minimising the Euclidean norm of the optimal flux. A more</span>
+0471         <span class="comment">%numerically stable way is to use pdco via solveCobraQP, which has</span>
+0472         <span class="comment">%a more reasonable d1 and should be more numerically robust. -Ronan</span>
+0473         d1=0; 
+0474         d2=1e-6;
+0475         options = pdcoSet;
+0476         options.FeaTol    = 1e-12;
+0477         options.OptTol    = 1e-12;
+0478         <span class="comment">%pdco is a general purpose convex optization solver, not only a</span>
+0479         <span class="comment">%linear optimization solver. As such, much control over the optimal</span>
+0480         <span class="comment">%solution and the method for solution is available. However, this</span>
+0481         <span class="comment">%also means you may have to tune the various parameters here,</span>
+0482         <span class="comment">%especially xsize and zsize (see pdco.m) to get the real optimal</span>
+0483         <span class="comment">%objective value</span>
+0484         xsize = 1000;
+0485         zsize = 10000;
+0486         
+0487         options.Method=2; <span class="comment">%QR</span>
+0488         options.MaxIter=100;
+0489         options.Print=printLevel;
+0490         [x,y,w,inform,PDitns,CGitns,time] = <span class="keyword">...</span>
+0491             pdco(osense*c*10000,A,b,lb,ub,d1,d2,options,x0,y0,z0,xsize,zsize);
+0492         f= c'*x;
+0493         <span class="comment">% inform = 0 if a solution is found;</span>
+0494 <span class="comment">%        = 1 if too many iterations were required;</span>
+0495 <span class="comment">%        = 2 if the linesearch failed too often;</span>
+0496 <span class="comment">%        = 3 if the step lengths became too small;</span>
+0497 <span class="comment">%        = 4 if Cholesky said ADDA was not positive definite.</span>
+0498         <span class="keyword">if</span> (inform == 0)
+0499             stat = 1;
+0500         <span class="keyword">elseif</span> (inform == 1 || inform == 2 || inform == 3)
+0501             stat = 0;
+0502         <span class="keyword">else</span>
+0503             stat = -1;
+0504         <span class="keyword">end</span>
+0505         origStat=inform;
+0506     <span class="keyword">case</span> <span class="string">'mps'</span>
+0507         <span class="comment">%% BuildMPS</span>
+0508         <span class="comment">% This calls buildMPS and generates a MPS format description of the</span>
+0509         <span class="comment">% problem as the result</span>
+0510         <span class="comment">% Build MPS Author: Bruno Luong</span>
+0511         <span class="comment">% Interfaced with CobraToolbox by Richard Que (12/18/09)</span>
+0512         display(<span class="string">'Solver set to MPS. This function will output an MPS matrix string for the LP problem'</span>);
+0513         <span class="comment">%Get optional parameters</span>
+0514         [EleNames,EqtNames,VarNames,EleNameFun,EqtNameFun,VarNameFun,PbName,MPSfilename] = <span class="keyword">...</span>
+0515             <a href="getCobraSolverParams.html" class="code" title="function varargout = getCobraSolverParams(solverType, paramNames, parameters)">getCobraSolverParams</a>(<span class="string">'LP'</span>,{<span class="string">'EleNames'</span>,<span class="string">'EqtNames'</span>,<span class="string">'VarNames'</span>,<span class="string">'EleNameFun'</span>,<span class="string">'EqtNameFun'</span>,<span class="string">'VarNameFun'</span>,<span class="string">'PbName'</span>,<span class="string">'MPSfilename'</span>},parameters);
+0516         <span class="comment">%split A matrix for L and E csense</span>
+0517         Ale = A(csense==<span class="string">'L'</span>,:);
+0518         ble = b(csense==<span class="string">'L'</span>);
+0519         Aeq = A(csense==<span class="string">'E'</span>,:);
+0520         beq = b(csense==<span class="string">'E'</span>);
+0521         
+0522         <span class="comment">%%%%Adapted from BuildMPS%%%%%</span>
+0523         [neq nvar]=size(Aeq);
+0524         nle=size(Ale,1);
+0525         <span class="keyword">if</span> isempty(EleNames)
+0526             EleNames=arrayfun(EleNameFun,(1:nle),<span class="string">'UniformOutput'</span>, false);
+0527         <span class="keyword">end</span>
+0528         <span class="keyword">if</span> isempty(EqtNames)
+0529             EqtNames=arrayfun(EqtNameFun,(1:neq),<span class="string">'UniformOutput'</span>, false);
+0530         <span class="keyword">end</span>
+0531         <span class="keyword">if</span> isempty(VarNames)
+0532             VarNames=arrayfun(VarNameFun,(1:nvar),<span class="string">'UniformOutput'</span>, false);
+0533         <span class="keyword">end</span>
+0534         <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0535         
+0536         [solution] = <a href="../../cobra/external/BuildMPS/BuildMPS.html" class="code" title="function [Contain OK]=BuildMPS(A, b, Aeq, beq, cost, L, U, PbName, varargin)">BuildMPS</a>(Ale, ble, Aeq, beq, c, lb, ub, PbName,<span class="string">'MPSfilename'</span>,MPSfilename,<span class="string">'EleNames'</span>,EleNames,<span class="string">'EqtNames'</span>,EqtNames,<span class="string">'VarNames'</span>,VarNames);
+0537         
+0538         
+0539     <span class="keyword">otherwise</span>
+0540         error([<span class="string">'Unknown solver: '</span> solver]);
+0541         
+0542 <span class="keyword">end</span>
+0543 <span class="keyword">if</span> ~strcmp(solver,<span class="string">'cplex_direct'</span>) &amp;&amp; ~strcmp(solver,<span class="string">'mps'</span>)
+0544     <span class="comment">%% Assign solution</span>
+0545     t = etime(clock, t_start);
+0546     <span class="keyword">if</span> ~exist(<span class="string">'basis'</span>,<span class="string">'var'</span>), basis=[]; <span class="keyword">end</span>
+0547     [solution.full,solution.obj,solution.rcost,solution.dual,solution.solver,solution.stat,solution.origStat,solution.time,solution.basis] = <span class="keyword">...</span>
+0548         deal(x,f,w,y,solver,stat,origStat,t,basis);
+0549 <span class="keyword">end</span>
+0550 
+0551 <span class="comment">%% solveGlpk Solve actual LP problem using glpk and return relevant results</span>
+0552 <a name="_sub1" href="#_subfunctions" class="code">function [x,f,y,w,stat,origStat] = solveGlpk(c,A,b,lb,ub,csense,osense,params)</a>
+0553 
+0554 <span class="comment">% Old way of calling glpk</span>
+0555 <span class="comment">%[x,f,stat,extra] = glpkmex(osense,c,A,b,csense,lb,ub,[],params);</span>
+0556 [x,f,origStat,extra] = glpk(c,A,b,lb,ub,csense,[],osense,params);
+0557 y = extra.lambda;
+0558 w = extra.redcosts;
+0559 <span class="comment">% Note that status handling may change (see glplpx.h)</span>
+0560 <span class="keyword">if</span> (origStat == 180 || origStat == 5)
+0561     stat = 1; <span class="comment">% Optimal solution found</span>
+0562 <span class="keyword">elseif</span> (origStat == 182 || origStat == 183 || origStat == 3 || origStat == 110)
+0563     stat = 0; <span class="comment">% Infeasible</span>
+0564 <span class="keyword">elseif</span> (origStat == 184 || origStat == 6)
+0565     stat = 2; <span class="comment">% Unbounded</span>
+0566 <span class="keyword">else</span>
+0567     stat = -1; <span class="comment">% Solution not optimal or solver problem</span>
+0568 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>

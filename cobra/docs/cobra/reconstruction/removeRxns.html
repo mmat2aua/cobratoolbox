@@ -45,7 +45,7 @@ OUTPUT
 <h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../../up.png"></a></h2>
 This function calls:
 <ul style="list-style-image:url(../../matlabicon.gif)">
-<li><a href="../../cobra/reassignFwBwMatch.html" class="code" title="function matchNew = reassignFwBwMatch(match,selVec)">reassignFwBwMatch</a>	reassingFwBwMatch Reassing forward-backward matches when modifying an</li></ul>
+<li><a href="../../cobra/reassignFwBwMatch.html" class="code" title="function matchNew = reassignFwBwMatch(match,selVec)">reassignFwBwMatch</a>	reassingFwBwMatch Reassing forward-backward matches when modifying an</li><li><a href="removeMetabolites.html" class="code" title="function model = removeMetabolites(model,metaboliteList,removeRxnFlag)">removeMetabolites</a>	removeMetabolites Remove metabolites from a model</li></ul>
 This function is called by:
 <ul style="list-style-image:url(../../matlabicon.gif)">
 <li><a href="../../cobra/checkDuplicateRxn.html" class="code" title="function [model,removed] = checkDuplicateRxn(model,method)">checkDuplicateRxn</a>	checkDuplicateRxn Checks model for duplicate reactions and removes them</li><li><a href="../../cobra/keepCompartment.html" class="code" title="function model = keepCompartment(model, compartments)">keepCompartment</a>	This function removes reactions in all compartments except those</li><li><a href="../../cobra/pFBA.html" class="code" title="function [GeneClasses RxnClasses modelIrrevFM] = pFBA(model, varargin)">pFBA</a>	Parsimoneous enzyme usage Flux Balance Analysis - method that optimizes</li><li><a href="createTissueSpecificModel.html" class="code" title="function [tissueModel,Rxns] = createTissueSpecificModel(model,expressionData,proceedExp,orphan,exRxnRemove,solver,options,funcModel)">createTissueSpecificModel</a>	createTissueSpecificModel Create draft tissue specific model from mRNA expression data</li><li><a href="removeMetabolites.html" class="code" title="function model = removeMetabolites(model,metaboliteList,removeRxnFlag)">removeMetabolites</a>	removeMetabolites Remove metabolites from a model</li><li><a href="../../cobra/reduceModel.html" class="code" title="function [modelRed,hasFlux,maxes,mins] = reduceModel(model,tol,irrevFlag,verbFlag,negFluxAllowedFlag,checkConsistencyFlag,changeBoundsFlag)">reduceModel</a>	reduceModel Removes from the model all of the reactions that are never used (max and</li><li><a href="../../cobra/removeDeadEnds.html" class="code" title="function [model,removedMets,removedRxns] = removeDeadEnds(model)">removeDeadEnds</a>	removeDeadEnds Remove all dead end metabolites and reactions from the</li></ul>
@@ -80,7 +80,7 @@ This function is called by:
 0025 <span class="keyword">end</span>
 0026 
 0027 [nMets,nRxns] = size(model.S);
-0028 
+0028 modelOut = model;
 0029 <span class="comment">% Find indices to rxns in the model</span>
 0030 [isValidRxn,removeInd] = ismember(rxnRemoveList,model.rxns);
 0031 removeInd = removeInd(isValidRxn);
@@ -127,35 +127,30 @@ This function is called by:
 0072 <span class="keyword">if</span> (isfield(model,<span class="string">'rxnNames'</span>))
 0073     modelOut.rxnNames = model.rxnNames(selectRxns);
 0074 <span class="keyword">end</span>
-0075 
-0076 <span class="comment">% Reconstruct the match list</span>
-0077 <span class="keyword">if</span> (irrevFlag)
-0078   modelOut.match = <a href="../../cobra/reassignFwBwMatch.html" class="code" title="function matchNew = reassignFwBwMatch(match,selVec)">reassignFwBwMatch</a>(model.match,selectRxns);
-0079   modelOut.rev(modelOut.match == 0) = false;
+0075 <span class="keyword">if</span> (isfield(model, <span class="string">'rxnReferences'</span>))
+0076   modelOut.rxnReferences = model.rxnReferences(selectRxns);
+0077 <span class="keyword">end</span>
+0078 <span class="keyword">if</span> (isfield(model, <span class="string">'rxnECNumbers'</span>))
+0079   modelOut.rxnECNumbers = model.rxnECNumbers(selectRxns);
 0080 <span class="keyword">end</span>
-0081 
-0082 <span class="comment">% Remove metabolites that are not used anymore</span>
-0083 <span class="keyword">if</span> (metFlag)
-0084   selMets = any(modelOut.S ~= 0,2);
-0085   modelOut.S = modelOut.S(selMets,:);
-0086   modelOut.mets = model.mets(selMets);
-0087   <span class="keyword">if</span> (isfield(model,<span class="string">'b'</span>))
-0088       modelOut.b = model.b(selMets);
-0089   <span class="keyword">else</span>
-0090       modelOut.b = zeros(length(modelOut.mets),1);
-0091   <span class="keyword">end</span>
-0092   <span class="keyword">if</span> (isfield(model,<span class="string">'metNames'</span>))
-0093       modelOut.metNames = model.metNames(selMets);
-0094   <span class="keyword">end</span>
-0095   <span class="keyword">if</span> (isfield(model,<span class="string">'metFormulas'</span>))
-0096       modelOut.metFormulas = model.metFormulas(selMets);
+0081 <span class="keyword">if</span> (isfield(model, <span class="string">'rxnNotes'</span>))
+0082   modelOut.rxnNotes = model.rxnNotes(selectRxns);
+0083 <span class="keyword">end</span>
+0084 
+0085 
+0086 <span class="comment">% Reconstruct the match list</span>
+0087 <span class="keyword">if</span> (irrevFlag)
+0088   modelOut.match = <a href="../../cobra/reassignFwBwMatch.html" class="code" title="function matchNew = reassignFwBwMatch(match,selVec)">reassignFwBwMatch</a>(model.match,selectRxns);
+0089   modelOut.rev(modelOut.match == 0) = false;
+0090 <span class="keyword">end</span>
+0091 
+0092 <span class="comment">% Remove metabolites that are not used anymore</span>
+0093 <span class="keyword">if</span> (metFlag)
+0094   selMets = modelOut.mets(any(sum(abs(modelOut.S),2) == 0,2));
+0095   <span class="keyword">if</span> (~isempty(selMets))
+0096     modelOut = <a href="removeMetabolites.html" class="code" title="function model = removeMetabolites(model,metaboliteList,removeRxnFlag)">removeMetabolites</a>(modelOut, selMets, false);
 0097   <span class="keyword">end</span>
-0098 <span class="keyword">else</span>
-0099   modelOut.mets = model.mets;
-0100   modelOut.metNames = model.metNames;
-0101   modelOut.metFormulas = model.metFormulas;
-0102   modelOut.b = model.b;
-0103 <span class="keyword">end</span></pre></div>
-<hr><address>Generated on Fri 22-Apr-2011 13:22:54 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
+0098 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Thu 21-Jun-2012 15:39:23 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2003</address>
 </body>
 </html>
