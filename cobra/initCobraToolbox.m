@@ -37,7 +37,7 @@ CobraLPSolver = 'tomlab_cplex';
 if isunix
   addpath('/usr/local/lib/');
 end
-CobraLPSolvers = { 'gurobi', 'tomlab_cplex', 'glpk', 'mosek', 'cplx' };
+CobraLPSolvers = { 'gurobi5', 'gurobi', 'tomlab_cplex', 'glpk', 'mosek', 'cplx' };
 for CobraLPSolver = CobraLPSolvers
     LPsolverOK = changeCobraSolver(char(CobraLPSolver));
     if LPsolverOK
@@ -51,7 +51,7 @@ end
 % Define default MILP solver
 %CobraMILPSolver = 'tomlab_cplex';
 %CobraMILPSolver = 'glpk';
-for CobraMILPSolver = { 'gurobi', 'tomlab_cplex', 'glpk' }
+for CobraMILPSolver = { 'gurobi5', 'gurobi', 'tomlab_cplex', 'glpk' }
     MILPsolverOK = changeCobraSolver(char(CobraMILPSolver),'MILP');
     if MILPsolverOK
         fprintf('MILP solver set to %s successful\n',char(CobraMILPSolver));
@@ -63,7 +63,7 @@ if ~MILPsolverOK
 end
 % Define default QP solver
 %CobraQPSolver = 'tomlab_cplex';
-for CobraQPSolver = {'gurobi', 'tomlab_cplex', 'qpng' }
+for CobraQPSolver = {'gurobi5', 'gurobi', 'tomlab_cplex', 'qpng' }
     QPsolverOK = changeCobraSolver(char(CobraQPSolver),'QP');
     if QPsolverOK
         fprintf('QP solver set to %s successful\n',char(CobraQPSolver));
@@ -74,7 +74,7 @@ if ~QPsolverOK
     fprintf('QP solver set failed\n');
 end
 % Define default MIQP solver
-for CobraMIQPSolver = {'gurobi' 'tomlab_cplex'}
+for CobraMIQPSolver = {'gurobi5', 'gurobi' 'tomlab_cplex'}
     MIQPsolverOK = changeCobraSolver(char(CobraMIQPSolver),'MIQP');
     if MIQPsolverOK
         fprintf('MIQP solver set to %s successful\n',char(CobraMIQPSolver));

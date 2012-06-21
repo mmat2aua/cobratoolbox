@@ -58,6 +58,7 @@ function solution = solveCobraMILP(MILPproblem,varargin)
 %
 %
 % Markus Herrgard 1/23/07
+% Tim Harrington  05/18/12 Added support for the Gurobi 5.0 solver
 
 %% Process options
 
@@ -225,7 +226,70 @@ switch solver
         else
            solStat = -1; % Solution not optimal or solver problem
         end
+        
+ case 'gurobi5'
+        %% gurobi 5
+        % Free academic licenses for the Gurobi solver can be obtained from
+        % http://www.gurobi.com/html/academic.html
+        resultgurobi = struct('x',[],'objval',[]);
+        MILPproblem.A = deal(sparse(MILPproblem.A));
+        clear params            % Use the default parameter settings
+        
+        if solverParams.printLevel == 0 
+           params.OutputFlag = 0;
+           params.DisplayInterval = 1;
+        else
+           params.OutputFlag = 1;
+           params.DisplayInterval = 5;
+        end
 
+        params.TimeLimit = solverParams.timeLimit;
+        params.MIPGap = solverParams.relMipGapTol;
+        
+        if solverParams.intTol <= 1e-09
+            params.IntFeasTol = 1e-09;
+        else
+            params.IntFeasTol = solverParams.intTol;
+        end
+        
+        params.FeasibilityTol = solverParams.feasTol;
+        params.OptimalityTol = solverParams.optTol;
+        
+        if (isempty(csense))
+            clear csense
+            csense(1:length(b),1) = '=';
+        else
+            csense(csense == 'L') = '<';
+            csense(csense == 'G') = '>';
+            csense(csense == 'E') = '=';
+            MILPproblem.csense = csense(:);
+        end
+	
+        if osense == -1
+            MILPproblem.osense = 'max';
+        else
+            MILPproblem.osense = 'min';
+        end
+        
+        MILPproblem.vtype = vartype;
+        MILPproblem.modelsense = MILPproblem.osense;
+        [MILPproblem.A,MILPproblem.rhs,MILPproblem.obj,MILPproblem.sense] = deal(sparse(MILPproblem.A),MILPproblem.b,double(MILPproblem.c),MILPproblem.csense);
+        resultgurobi = gurobi(MILPproblem,params);
+        
+        stat = resultgurobi.status;
+        if strcmp(resultgurobi.status,'OPTIMAL')
+           solStat = 1; % Optimal solution found
+           [x,f] = deal(resultgurobi.x,resultgurobi.objval);
+        elseif strcmp(resultgurobi.status,'INFEASIBLE')
+           solStat = 0; % Infeasible
+        elseif strcmp(resultgurobi.status,'UNBOUNDED')
+           solStat = 2; % Unbounded
+        elseif strcmp(resultgurobi.status,'INF_OR_UNBD')
+           solStat = 0; % Gurobi reports infeasible *or* unbounded
+        else
+           solStat = -1; % Solution not optimal or solver problem
+        end
+        
     case 'tomlab_cplex'
 %% CPLEX through tomlab
         if (~isempty(csense))

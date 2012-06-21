@@ -54,6 +54,7 @@ function solution = solveCobraMIQP(MIQPproblem,varargin)
 %
 %
 % Markus Herrgard 6/8/07
+% Tim Harrington  05/18/12 Added support for the Gurobi 5.0 solver
 
 global CBT_MIQP_SOLVER;
 solver = CBT_MIQP_SOLVER;
@@ -206,6 +207,65 @@ switch solver
            stat = -1; % Solution not optimal or solver problem
         end
         solStat = stat;
+    case 'gurobi5'
+     %% gurobi5
+     % Free academic licenses for the Gurobi solver can be obtained from
+        % http://www.gurobi.com/html/academic.html
+        resultgurobi = struct('x',[],'objval',[],'pi',[]);
+        clear params            % Use the default parameter settings
+        if printLevel == 0 
+            params.OutputFlag = 0;
+            params.DisplayInterval = 1;
+        else
+            params.OutputFlag = 1;
+            params.DisplayInterval = 5;
+        end
+
+        params.Method = 0;    %-1 = automatic, 0 = primal simplex, 1 = dual simplex, 2 = barrier, 3 = concurrent, 4 = deterministic concurrent
+        params.Presolve = -1; % -1 - auto, 0 - no, 1 - conserv, 2 - aggressive
+        params.IntFeasTol = 1e-5;
+        params.FeasibilityTol = 1e-6;
+        params.OptimalityTol = 1e-6;
+        
+        if (isempty(MIQPproblem.csense))
+            clear MIQPproblem.csense
+            MIQPproblem.csense(1:length(b),1) = '=';
+        else
+            MIQPproblem.csense(MIQPproblem.csense == 'L') = '<';
+            MIQPproblem.csense(MIQPproblem.csense == 'G') = '>';
+            MIQPproblem.csense(MIQPproblem.csense == 'E') = '=';
+            MIQPproblem.csense = MIQPproblem.csense(:);
+        end
+	
+        if MIQPproblem.osense == -1
+            MIQPproblem.osense = 'max';
+        else
+            MIQPproblem.osense = 'min';
+        end
+        
+        MIQPproblem.vtype = vartype;
+        MIQPproblem.Q = 0.5*sparse(MIQPproblem.F);
+        MIQPproblem.modelsense = MIQPproblem.osense;
+        [MIQPproblem.A,MIQPproblem.rhs,MIQPproblem.obj,MIQPproblem.sense] = deal(sparse(MIQPproblem.A),MIQPproblem.b,MIQPproblem.c,MIQPproblem.csense);
+        resultgurobi = gurobi(MIQPproblem,params);
+        solStat = resultgurobi.status;
+        if strcmp(resultgurobi.status,'OPTIMAL')
+           stat = 1; % Optimal solution found
+           
+           if exist('resultgurobi.pi')
+               [x,f,y] = deal(resultgurobi.x,resultgurobi.objval,resultgurobi.pi);
+           else
+               [x,f] = deal(resultgurobi.x,resultgurobi.objval);
+           end
+        elseif strcmp(resultgurobi.status,'INFEASIBLE')
+           stat = 0; % Infeasible
+        elseif strcmp(resultgurobi.status,'UNBOUNDED')
+           stat = 2; % Unbounded
+        elseif strcmp(resultgurobi.status,'INF_OR_UNBD')
+           stat = 0; % Gurobi reports infeasible *or* unbounded
+        else
+           stat = -1; % Solution not optimal or solver problem
+        end
         %%
     otherwise
         error(['Unknown solver: ' solver]);

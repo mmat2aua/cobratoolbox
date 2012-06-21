@@ -77,6 +77,8 @@ function solution = solveCobraLP(LPproblem, varargin)
 % Ronan Fleming      21/01/10 Not having second input, means use the parameters as specified in the
 %                             global paramerer variable, rather than 'default' parameters
 % Steinn Gudmundsson 03/03/10 Added support for the Gurobi solver
+% Tim Harrington     05/18/12 Added support for the Gurobi 5.0 solver
+
 
 %% Process arguments etc
 
@@ -301,7 +303,59 @@ switch solver
         else
            stat = -1; % Solution not optimal or solver problem
         end
+        
+    case 'gurobi5'
+        %% gurobi 5
+        % Free academic licenses for the Gurobi solver can be obtained from
+        % http://www.gurobi.com/html/academic.html
+        resultgurobi = struct('x',[],'objval',[],'pi',[]);
+        LPproblem.A = deal(sparse(LPproblem.A));
+        clear params            % Use the default parameter settings
+        
+        if printLevel == 0 
+           params.OutputFlag = 0;
+           params.DisplayInterval = 1;
+        else
+           params.OutputFlag = 1;
+           params.DisplayInterval = 5;
+        end
 
+        params.FeasibilityTol = feasTol;
+        params.OptimalityTol = optTol;
+        
+        if (isempty(LPproblem.csense))
+            clear LPproblem.csense
+            LPproblem.csense(1:length(b),1) = '=';
+        else
+            LPproblem.csense(LPproblem.csense == 'L') = '<';
+            LPproblem.csense(LPproblem.csense == 'G') = '>';
+            LPproblem.csense(LPproblem.csense == 'E') = '=';
+            LPproblem.csense = LPproblem.csense(:);
+        end
+	
+        if LPproblem.osense == -1
+            LPproblem.osense = 'max';
+        else
+            LPproblem.osense = 'min';
+        end
+        
+        LPproblem.modelsense = LPproblem.osense;
+        [LPproblem.rhs,LPproblem.obj,LPproblem.sense] = deal(LPproblem.b,double(LPproblem.c),LPproblem.csense);
+        resultgurobi = gurobi(LPproblem,params);
+        
+        if strcmp(resultgurobi.status,'OPTIMAL')
+           stat = 1; % Optimal solution found
+           [x,f,y] = deal(resultgurobi.x,resultgurobi.objval,resultgurobi.pi);
+        elseif strcmp(resultgurobi.status,'INFEASIBLE')
+           stat = 0; % Infeasible
+        elseif strcmp(resultgurobi.status,'UNBOUNDED')
+           stat = 2; % Unbounded
+        elseif strcmp(resultgurobi.status,'INF_OR_UNBD')
+           stat = 0; % Gurobi reports infeasible *or* unbounded
+        else
+           stat = -1; % Solution not optimal or solver problem
+        end
+        
     case 'matlab'
         %matlab is not a reliable LP solver
         if (isempty(csense))

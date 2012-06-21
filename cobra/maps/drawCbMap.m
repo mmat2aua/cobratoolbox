@@ -29,6 +29,8 @@ function options = drawCbMap(map,options,varargin)
 % options                  Structure containing optional parameters
 %
 %
+% Turner Conrad     6/12/12     Added rxnTextSize default (8) to fix error 
+%                               in writing reaction texts to .svg
 
 global mapHandle
 global CB_MAP_OUTPUT
@@ -108,7 +110,7 @@ if ~isfield(options,'textSize')
 end
 %Font Color
 if ~isfield(options,'textColor')
-    options.textColor= zeros(nNodes,3);
+    options.textColor = zeros(nNodes,3);
 end
 
 % if ~isfield(options,'otherTextSize')
@@ -261,7 +263,8 @@ for i = 1:length(map.text)
         textStyle = '';
     end
     %textFont
-    if find(regexp(textFont,' B')) || find(regexp(textFont(end),'B'))
+    % if find(regexp(textFont,' B')) || find(regexp(textFont(end),'B'))
+    if (find(regexp(textFont,'B')))
         textWeight = 'bold';
         textFont = regexprep(textFont,' B','');
     else
@@ -280,11 +283,10 @@ end
 % Write Reaction Label
 for i = 1:size(map.rxnLabelPosition,2)
     if ~any(isnan(map.rxnLabelPosition(:,i)))
-      %Currently there is not a default rxnTextSize in options.
       if isfield(options, 'rxnTextSize')
         drawText(map.rxnLabelPosition(1,i),map.rxnLabelPosition(2,i),map.connectionAbb{find(map.rxnIndex(i)==map.connection,1)},options.rxnTextSize(i),'italic');
       else
-        drawText(map.rxnLabelPosition(1,i),map.rxnLabelPosition(2,i),map.connectionAbb{find(map.rxnIndex(i)==map.connection,1)},'italic');
+        drawText(map.rxnLabelPosition(1,i),map.rxnLabelPosition(2,i),map.connectionAbb{find(map.rxnIndex(i)==map.connection,1)},8,'italic');
       end
     end
 end
