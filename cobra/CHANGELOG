@@ -4,6 +4,10 @@
  -Changed default solver to gurobi5 (no longer requires gurobi_mex).
  -Updated the SBMLToolbox to 4.1.0 (works with libSBML 5.5.0 - Thanks SBML.org).
 
+2.0.4
+ -Applied patch to allow for non-integer ids in createTissueSpecificModel
+ -Added support for solving QP's with gurobi / gurobi_mex
+
 
 2.0.5 TestAll Results
 passedCnt =
